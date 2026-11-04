@@ -146,4 +146,6 @@ function frame(t){if(!run)return;requestAnimationFrame(frame);const dt=Math.min(
  $('h1').textContent=`${Math.abs(car.v*3.6|0)} km/h  $${S.money|0}`;$('h2').textContent=`${AR[AI].n} | Lv${lvl()} ${LN[lvl()-1]} | ${PH[i]}${lvl()>=3?' | '+SE[se]:''}${lvl()>=4?' | Fuel '+(car.fuel|0)+'%':''}${car.pax?' | Pax '+car.pax+' T '+Math.max(0,tlim-el|0)+'s':''}`;
  engUpd();mm();R.render(sc,cam)}
 gref();
-</script></body></html>
+</script>
+<script src="./update.js"></script>
+</body></html>
