@@ -76,7 +76,7 @@ mb.onclick=()=>{if(X.day!==day())gen();
 
 /* ---------- nitro bar ---------- */
 const nb=document.createElement('div');
-nb.style.cssText='position:absolute;bottom:22px;left:50%;transform:translateX(-50%);width:150px;height:14px;border:1px solid #b8860b;border-radius:8px;background:#000a;overflow:hidden;display:none;pointer-events:none;z-index:3';
+nb.style.cssText='position:absolute;top:190px;left:8px;width:90px;height:14px;border:1px solid #b8860b;border-radius:8px;background:#000a;overflow:hidden;display:none;pointer-events:none;z-index:3';
 const nf=document.createElement('div');nf.style.cssText='height:100%;width:100%;background:#f3d27a';
 const nl=document.createElement('div');nl.textContent='NITRO';nl.style.cssText='position:absolute;inset:0;font:700 9px/14px system-ui;text-align:center;color:#fff;text-shadow:0 0 3px #000';
 nb.append(nf,nl);document.body.appendChild(nb);
