@@ -1,9 +1,10 @@
 /* Drive to Empire 3D — offline service worker */
-const CACHE = 'dte3d-cache-v1';
+const CACHE = 'dte3d-cache-v2';
 const ASSETS = [
   './',
   './index.html',
   './three.min.js',
+  './update.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
