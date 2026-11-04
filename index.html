@@ -15,7 +15,7 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 #hud{position:absolute;top:6px;left:8px;right:8px;display:none;justify-content:space-between;font-size:13px;font-weight:700;color:#f3d27a;pointer-events:none}
 #hud div{background:#000a;border:1px solid #b8860b88;border-radius:10px;padding:5px 9px}
 #msg{position:absolute;top:30%;width:100%;text-align:center;font-size:22px;font-weight:700;text-shadow:0 2px 6px #000;pointer-events:none}
-#ex{position:absolute;top:8px;left:50%;transform:translateX(-50%);min-width:0;padding:6px 12px;font-size:12px;display:none}
+#ex{position:absolute;bottom:88px;right:10px;left:auto;transform:none;min-width:0;padding:6px 12px;font-size:12px;display:none;z-index:6}
 .k{position:absolute;bottom:14px;display:none;gap:8px}
 .k button{width:60px;height:60px;border-radius:50%;border:2px solid #b8860b;background:radial-gradient(#3a2a08,#000b);color:#f3d27a;font-weight:700;font-size:11px;touch-action:none}
 </style></head><body>
@@ -27,7 +27,7 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 <script src="./three.min.js"></script>
 <script>
 /* PWA: offline service worker */
-if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=4').catch(()=>{}))}
 </script>
 <script>
 const $=i=>document.getElementById(i);
