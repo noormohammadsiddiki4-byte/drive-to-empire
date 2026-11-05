@@ -147,38 +147,64 @@ for(let k=0;k<CPN;k++){
 
 /* ===== STEP 3: STREET LIFE (sidewalks, pedestrians, shops) ===== */
 // --- SIDEWALKS: raised kerb strips on both sides of the road ---
-const SWW=1.6, SWH=0.22;                 // sidewalk width / height
+// FIX: sidewalk used to start exactly at the road edge and share the same
+// plane -> z-fighting ("kapa-kapi"). Now the road is 2*RW wide, the sidewalk
+// begins OUTSIDE the road, is raised, and uses its own material.
+const SWW=2.2, SWH=0.28;                 // sidewalk width / height (wider, taller)
+const SWN=90;
 const swGeo=new THREE.BufferGeometry();
-const SWN=90, swPos=new Float32Array((SWN+1)*12), swUv=new Float32Array((SWN+1)*8), swIdx=[];
+const swPos=new Float32Array((SWN+1)*12), swUv=new Float32Array((SWN+1)*8), swIdx=[];
 for(let i=0;i<SWN;i++){const a=i*4;swIdx.push(a,a+1,a+2,a+1,a+3,a+2,a+2,a+1,a+4,a+1,a+5,a+4)}
 swGeo.setIndex(swIdx);
 swGeo.setAttribute('position',new THREE.BufferAttribute(swPos,3));
 swGeo.setAttribute('uv',new THREE.BufferAttribute(swUv,2));
-const swTex=tex(32,64,g=>{g.fillStyle='#9e9e9e';g.fillRect(0,0,32,64);g.strokeStyle='#7a7a7a';g.lineWidth=2;for(let y=0;y<64;y+=16){g.beginPath();g.moveTo(0,y);g.lineTo(32,y);g.stroke()}g.strokeStyle='#8a8a8a';g.beginPath();g.moveTo(16,0);g.lineTo(16,64);g.stroke()});
+// paving-slab texture: big square tiles + grout lines + subtle speckle
+const swTex=tex(64,64,g=>{
+  g.fillStyle='#bdb7ab';g.fillRect(0,0,64,64);
+  for(let i=0;i<900;i++){const v=150+Math.random()*70|0;g.fillStyle=`rgba(${v},${v-6},${v-14},.30)`;g.fillRect(Math.random()*64,Math.random()*64,2,2)}
+  g.strokeStyle='#8f887c';g.lineWidth=3;
+  g.strokeRect(1,1,62,62);g.beginPath();g.moveTo(32,0);g.lineTo(32,64);g.moveTo(0,32);g.lineTo(64,32);g.stroke();
+});
 const swMat=new THREE.MeshStandardMaterial({map:swTex,roughness:.95,side:THREE.DoubleSide});
-const sidewalk=new THREE.Mesh(swGeo,swMat);sidewalk.receiveShadow=true;sidewalk.frustumCulled=false;sc.add(sidewalk);
-// kerb (outer edge lip)
-const kerbMat=new THREE.MeshStandardMaterial({color:0xcfcfcf,roughness:.9});
+const sidewalk=new THREE.Mesh(swGeo,swMat);sidewalk.receiveShadow=true;sidewalk.frustumCulled=false;sc.add(sidewalk);// kerb stones: vertical lip between road and sidewalk (both sides)
+const kerbMat=new THREE.MeshStandardMaterial({color:0xd8d4cc,roughness:.85,side:THREE.DoubleSide});
 const kerbGeo=new THREE.BufferGeometry();const KBN=90,kbPos=new Float32Array((KBN+1)*12),kbUv=new Float32Array((KBN+1)*8),kbIdx=[];
 for(let i=0;i<KBN;i++){const a=i*4;kbIdx.push(a,a+1,a+2,a+1,a+3,a+2,a+2,a+1,a+4,a+1,a+5,a+4)}
 kerbGeo.setIndex(kbIdx);kerbGeo.setAttribute('position',new THREE.BufferAttribute(kbPos,3));kerbGeo.setAttribute('uv',new THREE.BufferAttribute(kbUv,2));
-const kerb=new THREE.Mesh(kerbGeo,kerbMat);kerb.frustumCulled=false;sc.add(kerb);
+const kerb=new THREE.Mesh(kerbGeo,kerbMat);kerb.frustumCulled=false;kerb.receiveShadow=true;sc.add(kerb);
+// outer drop-wall so the sidewalk doesn't look like it floats
+const owGeo=new THREE.BufferGeometry();const OWN=90,owPos=new Float32Array((OWN+1)*12),owUv=new Float32Array((OWN+1)*8),owIdx=[];
+for(let i=0;i<OWN;i++){const a=i*4;owIdx.push(a,a+1,a+2,a+1,a+3,a+2,a+2,a+1,a+4,a+1,a+5,a+4)}
+owGeo.setIndex(owIdx);owGeo.setAttribute('position',new THREE.BufferAttribute(owPos,3));owGeo.setAttribute('uv',new THREE.BufferAttribute(owUv,2));
+const owMat=new THREE.MeshStandardMaterial({color:0xa8a29a,roughness:.95,side:THREE.DoubleSide});
+const outerWall=new THREE.Mesh(owGeo,owMat);outerWall.frustumCulled=false;sc.add(outerWall);
 function updSidewalk(){
   const b=Math.max(0,Math.floor(car.s/ST)-8);
   for(let i=0;i<=SWN;i++){
     const n=b+i,q=pt(n),c=Math.cos(q.t),sn=Math.sin(q.t);
     const iL=RW, oL=RW+SWW, iR=-RW, oR=-(RW+SWW);
-    // left strip: inner edge (iL) and outer edge (oL)
-    swPos.set([q.x+c*iL,SWH,q.z+sn*iL, q.x+c*oL,SWH,q.z+sn*oL,
-               q.x+c*iL,0,q.z+sn*iL,     q.x+c*oL,0,q.z+sn*oL], i*12);
-    swUv.set([0,n*ST/4, 1,n*ST/4, 0,n*ST/4, 1,n*ST/4], i*8);
-    // kerb lip (vertical face at inner edge)
-    kbPos.set([q.x+c*iL,SWH,q.z+sn*iL, q.x+c*iL,0,q.z+sn*iL,
-               q.x+c*iL,SWH,q.z+sn*iL, q.x+c*iL,0,q.z+sn*iL], i*12);
-    kbUv.set([0,n*ST/4, 0,n*ST/4, 1,n*ST/4, 1,n*ST/4], i*8);
+    // top surface (4 verts): left inner, left outer, right inner, right outer
+    swPos.set([
+      q.x+c*iL,SWH,q.z+sn*iL,  q.x+c*oL,SWH,q.z+sn*oL,
+      q.x+c*iR,SWH,q.z+sn*iR,  q.x+c*oR,SWH,q.z+sn*oR
+    ], i*12);
+    swUv.set([0,n*ST/2.2, 1,n*ST/2.2, 0,n*ST/2.2, 1,n*ST/2.2], i*8);
+    // kerb lip at INNER edge (road side), both sides
+    kbPos.set([
+      q.x+c*iL,SWH,q.z+sn*iL,  q.x+c*iL,0,q.z+sn*iL,
+      q.x+c*iR,SWH,q.z+sn*iR,  q.x+c*iR,0,q.z+sn*iR
+    ], i*12);
+    kbUv.set([0,n*ST/2.2, 1,n*ST/2.2, 0,n*ST/2.2, 1,n*ST/2.2], i*8);
+    // outer drop-wall, both sides
+    owPos.set([
+      q.x+c*oL,SWH,q.z+sn*oL,  q.x+c*oL,0,q.z+sn*oL,
+      q.x+c*oR,SWH,q.z+sn*oR,  q.x+c*oR,0,q.z+sn*oR
+    ], i*12);
+    owUv.set([0,n*ST/2.2, 1,n*ST/2.2, 0,n*ST/2.2, 1,n*ST/2.2], i*8);
   }
   swGeo.attributes.position.needsUpdate=true;swGeo.attributes.uv.needsUpdate=true;
   kerbGeo.attributes.position.needsUpdate=true;kerbGeo.attributes.uv.needsUpdate=true;
+  owGeo.attributes.position.needsUpdate=true;owGeo.attributes.uv.needsUpdate=true;
 }
 // --- PEDESTRIANS: walk along sidewalks, dodge the car ---
 const PEDN=14, PED=[];
@@ -195,7 +221,10 @@ function mkPed(){
 }
 for(let k=0;k<PEDN;k++){const m=mkPed();sc.add(m);PED.push({m,s:-99,lat:0,dir:1,spd:.8+Math.random()*.8,ph:Math.random()*6})}
 function updPeds(dt){
+  const city=(AI==0);
   for(const p of PED){
+    p.m.visible=city;
+    if(!city)continue;
     // recycle far away
     if(p.s<car.s-40||p.s>car.s+400){
       p.s=car.s+30+Math.random()*300;
@@ -215,8 +244,11 @@ function updPeds(dt){
     p.ph+=dt*p.spd*7;
     const sw=Math.sin(p.ph)*.35;
     p.m.userData.legs[0].rotation.x=sw;p.m.userData.legs[1].rotation.x=-sw;
-    // hit detection
-    if(ds>-2.2&&ds<2.2&&dl<RW+0.6&&Math.abs(car.v)>3){car.v*=.4;msg('Careful! Pedestrian!');tone(220,.3,'square',.05)}
+    // gentle brush detection: only when ACTUALLY touching, with cooldown
+    if(ds>-1.6&&ds<1.6&&dl<RW-0.6&&Math.abs(car.v)>4){
+      car.v*=.75;
+      if(msg('Careful! Pedestrian!',6))tone(220,.3,'square',.05);
+    }
   }
 }
 // --- SHOPS: buildings with signboards along the outer sidewalk ---
@@ -250,6 +282,9 @@ for(let k=0;k<SHOPN;k++){const o=mkShop();sc.add(o.g);SHOP.push({...o,s:-99,side
 function updShops(){
   for(let k=0;k<SHOPN;k++){
     const sh=SHOP[k];
+    // shops only line the street in the City area
+    sh.g.visible=(AI==0);
+    if(!sh.g.visible)continue;
     if(sh.s<car.s-80||sh.s>car.s+500){
       sh.s=car.s+40+Math.random()*400;
       sh.side=(Math.random()<.5?1:-1);
@@ -269,10 +304,14 @@ for(let k=0;k<TLN;k++){const g=new THREE.Group(),pole=new THREE.Mesh(new THREE.C
  const ln=new THREE.Mesh(new THREE.PlaneGeometry(RW*2,.5),new THREE.MeshBasicMaterial({color:0xf2f2f2}));ln.rotation.order='YXZ';sc.add(g,ln);TL.push({g,ln,mats})}
 const tls=n=>{const t=(clk+n*3.7)%14;return t<6?0:t<8?1:2};
 function upTL(ps){TL.forEach(t=>t.g.visible=t.ln.visible=AI==0);if(AI)return;const b=Math.max(0,Math.floor((car.s-210)/400));for(let k=0;k<TLN;k++){let n=Math.floor(b/TLN)*TLN+k;if(n<b)n+=TLN;const t=TL[k],s=200+400*n,p=at(s,RW+.9),q=at(s-3,0),st=tls(n);t.g.position.set(p.x,0,p.z);t.g.rotation.y=-p.t;t.ln.position.set(q.x,.04,q.z);t.ln.rotation.set(-Math.PI/2,-q.t,0);t.mats.forEach((m,j)=>m.emissiveIntensity=j==2-st?2.5:.08);
-  if(ps<s-3&&car.s>=s-3&&st==2&&Math.abs(car.v)>4){S.money=Math.max(0,S.money-50);msg('Red light! -$50')}}}
+  if(ps<s-3&&car.s>=s-3&&st==2&&Math.abs(car.v)>4){S.money=Math.max(0,S.money-50);msg('Red light! -$50',3)}}}
 // state
 let clk=0,run=0,last=0,KY={},car={s:0,lat:0,v:0,st:0,m:null,fuel:100,pax:0},acc=0,msgT=0,sv=0,dest=null,tlim=0,el=0,pol=null,ot=0,sir=0;
-function msg(t){$('msg').textContent=t;msgT=1.8}
+// msg(t, cool, kind): 'cool' = seconds before the SAME message can repeat.
+// Prevents the annoying "Careful! Pedestrian!" spam every frame.
+let _msgLast={},_msgAt=-99;
+function msg(t,cool,kind){const now=clk;if(cool&&_msgLast[t]&&now-_msgLast[t]<cool)return false;
+  _msgLast[t]=now;$('msg').textContent=t;msgT=1.8;return true}
 function chg(d){gi=(gi+d+5)%5;gref()}
 function play(){if(lvl()<AR[AI].min)return;engStart();P.length=1;_plan=[];_pi=0;_isTurn=false;_straightRemain=0;_turnRemain=0;AM=AR[AI].amp;$('home').style.display='none';['hud','ex'].forEach(i=>$(i).style.display='flex');$('mm').style.display='block';$('kl').style.display=$('kr').style.display='flex';if(car.m)sc.remove(car.m);car.m=makeCar(S.cur);sc.add(car.m);Object.assign(car,{s:0,lat:0,v:0,st:0,fuel:100,pax:0});dest=null;destM.visible=false;pol=null;polM.visible=false;ot=0;PAS.forEach(p=>p.s=-99);STA.s=700;TRF.forEach(t=>t.s=-999);COIN.forEach(c=>c.s=-99);CPS.forEach((c,k)=>{c.s=350+k*CPSSPACING;c.state=0;c.wait=0;c.passed=0});const p=at(-8,0);cam.position.set(p.x,3.4,p.z);run=1;last=performance.now();requestAnimationFrame(frame)}
 function quit(){run=0;if(eg)eg.gain.value=0;save();$('home').style.display='flex';['hud','ex'].forEach(i=>$(i).style.display='none');$('mm').style.display='none';$('kl').style.display=$('kr').style.display='none';gi=S.cur;gref()}
@@ -320,7 +359,7 @@ function updCheckpoints(dt){
     if(c.state==0){
       // approaching
       c.bar.material.emissiveIntensity=.6;
-      if(dist<28&&dist>0){c.state=1;c.wait=0;msg('CHECKPOINT - STOP!');tone(500,.3,'square',.05)}
+      if(dist<28&&dist>0){c.state=1;c.wait=0;if(msg('CHECKPOINT - STOP!',4))tone(500,.3,'square',.05)}
     }else if(c.state==1){
       // must stop briefly (easy: 0.8s, tolerant speed)
       const kmh=Math.abs(car.v)*3.6;
@@ -344,7 +383,7 @@ function updCheckpoints(dt){
   }
 }
 /* ===== END CHECKPOINT LOGIC ===== */
-const PR=[8000,15000,22000,30000,45000],AR=[{n:'City',lim:60,amp:1,min:1},{n:'Highway',lim:100,amp:.4,min:3},{n:'Mountain',lim:70,amp:1.6,min:5}];let gi=S.cur,AI=0;
+const PR=[8000,15000,22000,30000,45000],AR=[{n:'City',lim:60,amp:1,min:1,side:1},{n:'Highway',lim:100,amp:.4,min:3,side:0},{n:'Mountain',lim:70,amp:1.6,min:5,side:0}];let gi=S.cur,AI=0;
 function gref(){const o=S.own.includes(gi),lk=lvl()<gi+1,c=CARS[gi],b=$('bb');$('cn').textContent=c.n+' - '+c.v+' km/h';b.textContent=o?(S.cur==gi?'SELECTED':'SELECT'):lk?'LOCKED Lv '+(gi+1):'BUY $'+PR[gi];b.style.opacity=!o&&lk?.5:1;$('ab').textContent='AREA: '+AR[AI].n+(lvl()<AR[AI].min?' (Lv '+AR[AI].min+')':'')}
 function bsel(){if(!S.own.includes(gi)){if(lvl()<gi+1||S.money<PR[gi])return;S.money-=PR[gi];S.own.push(gi)}S.cur=gi;save();gref()}
 function parea(){AI=(AI+1)%3;gref()}
@@ -369,7 +408,7 @@ function frame(t){if(!run)return;requestAnimationFrame(frame);const dt=Math.min(
  if(Math.abs(car.lat)>RW+.3)car.v*=1-1.5*dt;car.lat=Math.max(-RW-3,Math.min(RW+3,car.lat));
  const ps=car.s;car.s=Math.max(0,car.s+car.v*dt);acc+=Math.abs(car.v)*dt;if(acc>50){acc-=50;pay(5)}
  const p=at(car.s,car.lat),yaw=car.st*.1;car.m.position.set(p.x,0,p.z);car.m.rotation.set(-car.st*car.v*.0015,-(p.t+yaw),0,'YXZ');car.m.userData.tl.emissiveIntensity=KY.b&&car.v>1?3.5:1.2;
- for(const t of TRF){if(t.s<car.s-30||t.s>car.s+500){t.s=car.s+90+Math.random()*300;t.lat=LANES[Math.random()<.5?0:2];t.v=(7+Math.random()*8)*(AI==1?1.8:1)}t.s+=t.v*dt;const q=at(t.s,t.lat);t.m.position.set(q.x,0,q.z);t.m.rotation.y=-q.t;const ds=t.s-car.s;if(ds>-4.5&&ds<4.8&&Math.abs(t.lat-car.lat)<2.1){car.v*=.35;t.s=car.s+400;msg('Crash!')}}
+ for(const t of TRF){if(t.s<car.s-30||t.s>car.s+500){t.s=car.s+90+Math.random()*300;t.lat=LANES[Math.random()<.5?0:2];t.v=(7+Math.random()*8)*(AI==1?1.8:1)}t.s+=t.v*dt;const q=at(t.s,t.lat);t.m.position.set(q.x,0,q.z);t.m.rotation.y=-q.t;const ds=t.s-car.s;if(ds>-4.5&&ds<4.8&&Math.abs(t.lat-car.lat)<2.1){car.v*=.35;t.s=car.s+400;msg('Crash!',2)}}
  for(const k of COIN){if(k.s<car.s-10){k.s=car.s+40+Math.random()*250;k.lat=LANES[Math.random()*3|0]}const q=at(k.s,k.lat);k.m.position.set(q.x,1,q.z);k.m.rotation.y+=dt*3;if(Math.abs(k.s-car.s)<2.5&&Math.abs(k.lat-car.lat)<2){pay(25);k.s=-99}}
  const[i,se]=env();updRoad();updSidewalk();upTL(ps);game(dt);updCheckpoints(dt);updPeds(dt);updShops();place(Math.max(0,Math.floor(car.s/8)-4));placeH(Math.max(0,Math.floor(car.s/80)-3));placeL(Math.max(0,Math.floor(car.s/24)-2));ground.position.set(p.x,0,p.z);gt.offset.set(p.x/5,-p.z/5);
  const cp=at(car.s-8.5,car.lat*.7),lk=at(car.s+14,car.lat*.5),sk=Math.abs(car.lat)>RW?Math.random()*.08:0;cam.position.lerp(new THREE.Vector3(cp.x,3.4+sk,cp.z),Math.min(1,dt*6));cam.lookAt(lk.x,1.2,lk.z);cam.fov=60+Math.abs(car.v)*.6;cam.updateProjectionMatrix();
