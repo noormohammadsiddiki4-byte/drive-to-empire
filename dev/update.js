@@ -26,7 +26,15 @@ const POOL=[
 {k:'nitro',f:n=>`Use nitro ${n} times`,t:[3,5,8],r:400},
 {k:'clean',f:n=>`Drive ${n} km without a crash`,t:[1,2,3],r:700,max:1},
 {k:'speed',f:n=>`Reach ${n} km/h`,t:[90,100,110],r:500,max:1},
-{k:'earn',f:n=>`Earn $${n}`,t:[1500,2500,4000],r:600}];
+{k:'earn',f:n=>`Earn $${n}`,t:[1500,2500,4000],r:600},
+{k:'fuel',f:n=>`Refuel ${n} times`,t:[1,2,3],r:450},
+{k:'cp',f:n=>`Pass ${n} checkpoints`,t:[3,6,10],r:550},
+{k:'overtake',f:n=>`Overtake ${n} cars`,t:[5,10,18],r:650},
+{k:'drift',f:n=>`Drift for ${n} seconds`,t:[5,10,20],r:700},
+{k:'nocrash',f:n=>`Drive ${n} km with zero crashes`,t:[2,4,6],r:800,max:1},
+{k:'police',f:n=>`Escape the police ${n} times`,t:[1,2,3],r:900},
+{k:'longtrip',f:n=>`Complete ${n} long trips (5km+)`,t:[1,2,3],r:750},
+{k:'topspd',f:n=>`Hold ${n} km/h for 5 seconds`,t:[80,100,120],r:600,max:1}];
 const ACH=[
 ['first','First Fare',s=>s.pax>=1,200],
 ['taxi','Taxi Pro: deliver 25 passengers',s=>s.pax>=25,1500],
@@ -38,7 +46,24 @@ const ACH=[
 ['night','Night Rider: drive 2 km at night',s=>s.night>=2,600],
 ['clean','Clean Driver: 3 km without a crash',s=>s.cl>=3,800],
 ['car','Collector: own 3 cars',()=>S.own.length>=3,1500],
-['esc','Escape Artist: outrun the police',s=>s.esc>=1,1000]];
+['esc','Escape Artist: outrun the police',s=>s.esc>=1,1000],
+['car5','Garage King: own 5 cars',()=>S.own.length>=5,2500],
+['car8','Fleet Owner: own 8 cars',()=>S.own.length>=8,5000],
+['carall','Perfectionist: own every car',()=>S.own.length>=CARS.length,15000],
+['km100','Long Hauler: drive 100 km',s=>s.km>=100,3000],
+['km250','Road Legend: drive 250 km',s=>s.km>=250,6000],
+['fast200','Hyper Speed: reach 200 km/h',s=>s.best>=200,2500],
+['nit50','Nitro Addict: use nitro 50 times',s=>s.nitro>=50,2000],
+['pax100','People Mover: deliver 100 passengers',s=>s.pax>=100,4000],
+['coin500','Coin Tycoon: 500 coins',s=>s.coins>=500,3000],
+['clean10','Flawless: 10 km without a crash',s=>s.cl>=10,4000],
+['night10','Night Owl: drive 10 km at night',s=>s.night>=10,2500],
+['rain10','Storm Chaser: drive 10 km in the rain',s=>s.rain>=10,2500],
+['cp50','Checkpoint Ace: pass 50 checkpoints',s=>s.cp>=50,3000],
+['esc10','Untouchable: escape the police 10 times',s=>s.esc>=10,5000],
+['lvl5','Empire Builder: reach Level 5',()=>lvl()>=5,5000],
+['lvl8','Tycoon: reach Level 8',()=>lvl()>=8,12000],
+['lvl10','Dynasty: reach Level 10',()=>lvl()>=10,25000]];
 
 function gen(){
  X.day=day();X.b=0;let h=0;for(const c of X.day)h=(h*31+c.charCodeAt(0))>>>0;
@@ -95,7 +120,7 @@ const pool=new T.Mesh(new T.PlaneGeometry(8,26),new T.MeshBasicMaterial({map:pt2
 pool.rotation.x=-Math.PI/2;pool.position.set(0,.07,-15);hg.add(pool);
 const bgeo=new T.ConeGeometry(2.4,20,16,1,true);bgeo.rotateX(Math.PI/2);bgeo.translate(0,0,-10);
 const bmat=new T.MeshBasicMaterial({color:0xfff3c8,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide}),BM=[];
-for(const s of[-1,1]){const m=new T.Mesh(bgeo,bmat);m.position.set(s*.62,.7,-2.2);hg.add(m);BM.push(m)}
+for(const s of[-1,1]){const m=new T.Mesh(bgeo,bmat);m.position.set(s*.62,.7,-2.2);m.visible=false;hg.add(m);BM.push(m)}
 const fgeo=new T.ConeGeometry(.28,1.8,10);fgeo.rotateX(Math.PI/2);fgeo.translate(0,0,.9);
 const fmat=new T.MeshBasicMaterial({color:0xff8a2a,transparent:true,opacity:.9,blending:T.AdditiveBlending,depthWrite:false}),FL=[];
 for(const s of[-1,1]){const m=new T.Mesh(fgeo,fmat);m.position.set(s*.55,.5,2.4);m.visible=false;hg.add(m);FL.push(m)}
@@ -107,12 +132,13 @@ const bw=new T.MeshStandardMaterial({map:win(0),emissiveMap:win(1),emissive:0xff
 TR.forEach(o=>{o.b.material=bw;o.u0=o.b.geometry.attributes.uv.array.slice();o.sy=0});
 
 /* ---------- hooks into the game ---------- */
-let lt=0,ps=null,cl=0,rn=0,sa=0,tip=0;const vv=new T.Vector3();
+let lt=0,ps=null,cl=0,rn=0,sa=0,tip=0,spdHold=0,driftAcc=0,lastFuel=100,lastCp=0;const vv=new T.Vector3();
 
 const _m=msg;msg=function(t){_m(t);t=String(t);
  if(t.startsWith('Fare'))ev('pax',car.pax);
  else if(t=='Crash!'){cl=0;nit.on=false}
- else if(t.startsWith('Escaped'))ev('esc',1)};
+ else if(t.startsWith('Escaped'))ev('esc',1)
+ else if(t.startsWith('Refueled'))ev('fuel',1)};
 
 const _a=act;act=function(){
  if(run&&Math.abs(car.v)>2.5){
@@ -153,7 +179,7 @@ const _f=frame;frame=function(t){
  const on=Math.max(autoOn?nightness:0,rn*.4),lit=on>.03;
  hg.visible=lit||nit.on;
  if(hg.visible){hg.position.copy(car.m.position);hg.rotation.y=car.m.rotation.y;
-  pool.visible=lit;BM.forEach(m=>m.visible=lit);pool.material.opacity=.55*on;bmat.opacity=.14*on;
+  pool.visible=lit;BM.forEach(m=>m.visible=false);pool.material.opacity=.55*on;bmat.opacity=0;
   FL.forEach(m=>{m.visible=nit.on;m.scale.set(1,1,.7+Math.random()*.7)})}
  /* tail lights glow at night */
  if(car.m&&car.m.userData.tl)car.m.userData.tl.emissiveIntensity=autoOn?2.2:1.2;
@@ -169,8 +195,13 @@ const _f=frame;frame=function(t){
 
  /* mission / achievement tracking */
  const d=S.earn-pe;pe=S.earn;if(d>0){ev('earn',d);if(d>=25&&d<100)ev('coin',1)}
- ev('speed',Math.abs(car.v)*3.6);
- if(ps!=null){const ds=car.s-ps;if(ds>0&&ds<100){const km=ds/1e3;cl+=km;ev('km',km);ev('clean',cl);if(rn>.5)ev('rain',km);if(nt>.7)ev('night',km)}}
+ const spd=Math.abs(car.v)*3.6;ev('speed',spd);
+ if(spd>=80){spdHold+=dt;if(spdHold>=5){spdHold=-1e9;ev('topspd',spd)}}else if(spdHold>=0)spdHold=0;
+ if(ps!=null){const ds=car.s-ps;if(ds>0&&ds<100){const km=ds/1e3;cl+=km;ev('km',km);ev('clean',cl);if(rn>.5)ev('rain',km);if(nt>.7)ev('night',km)}
+  else if(ds<0)cl=0}
+ if(car.fuel>lastFuel+20)ev('fuel',1);lastFuel=car.fuel;
+ if(typeof CPS!=='undefined'&&CPS){const done=CPS.filter(c=>c.passed).length;if(done>lastCp){ev('cp',done-lastCp);lastCp=done}}
+ if(typeof TRF!=='undefined'&&TRF)TRF.forEach(t=>{if(t.s>0&&Math.abs(t.s-car.s)<3&&!t._ot){t._ot=1;ev('overtake',1)}else if(Math.abs(t.s-car.s)>8)t._ot=0});
  ps=car.s;
  if((sa+=dt)>3){sa=0;save2()}
 };
