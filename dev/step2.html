@@ -12,6 +12,9 @@ html,body{height:100%;margin:0;background:#000;color:#f4ead0;font-family:system-
 #home{overflow:auto;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(ellipse at 50% 15%,#2b2007,#0b0905 55%,#000);text-align:center;z-index:5}
 h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradient(#f3d27a,#b8860b);-webkit-background-clip:text;color:transparent}
 .b{background:linear-gradient(#f3d27a,#d9a520 45%,#8a6208);color:#1a1200;border:1px solid #f3d27a;border-radius:12px;padding:13px 26px;font-weight:700;font-size:16px;min-width:200px}
+#btnbox{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(92vw,420px)}
+#btnbox .b{min-width:0;width:100%;padding:13px 8px;font-size:15px}
+#btnbox #bb{grid-column:1/3}
 #hud{position:absolute;top:6px;left:8px;right:8px;display:none;justify-content:space-between;font-size:13px;font-weight:700;color:#f3d27a;pointer-events:none}
 #hud div{background:#000a;border:1px solid #b8860b88;border-radius:10px;padding:5px 9px}
 #msg{position:absolute;top:30%;width:100%;text-align:center;font-size:22px;font-weight:700;text-shadow:0 2px 6px #000;pointer-events:none}
@@ -20,8 +23,8 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 .k{position:absolute;bottom:14px;display:none;gap:8px}
 .k button{width:60px;height:60px;border-radius:50%;border:2px solid #b8860b;background:radial-gradient(#3a2a08,#000b);color:#f3d27a;font-weight:700;font-size:11px;touch-action:none}
 </style></head><body>
-<div id="home"><svg width="170" height="112" viewBox="0 0 150 100" style="margin-bottom:0"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d27a"/><stop offset="1" stop-color="#b8860b"/></linearGradient><linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b23c"/><stop offset="1" stop-color="#a87f12"/></linearGradient></defs><circle cx="75" cy="46" r="43" fill="url(#bg2)" stroke="#f3d27a" stroke-width="2"/><rect x="43" y="27" width="18" height="4" rx="2" fill="#f3d27a"/><rect x="89" y="27" width="18" height="4" rx="2" fill="#f3d27a"/><path d="M50 48 l7 -11 h36 l7 11" fill="none" stroke="#3a2c05" stroke-width="3" stroke-linejoin="round"/><rect x="39" y="46" width="72" height="14" rx="3" fill="#f3d27a"/><circle cx="56" cy="62" r="7.5" fill="#3a2c05"/><circle cx="56" cy="62" r="3" fill="#f3d27a"/><circle cx="94" cy="62" r="7.5" fill="#3a2c05"/><circle cx="94" cy="62" r="3" fill="#f3d27a"/><rect x="46" y="74" width="58" height="3" rx="1.5" fill="#8a6a0e"/><text x="75" y="97" text-anchor="middle" font-family="Georgia,serif" font-size="13" letter-spacing="6" fill="url(#lg)">GAMES</text></svg><h1>DRIVE TO EMPIRE</h1><div style="color:#b8860b">TRUCKRES</div><div id="cn" style="font-size:18px;margin:8px"></div>
-<button class="b" onclick="chg(-1)">PREV CAR</button><button class="b" onclick="chg(1)">NEXT CAR</button><button class="b" id="bb" onclick="bsel()">SELECT</button><button class="b" id="ab" onclick="parea()">AREA</button><button class="b" onclick="play()">PLAY</button></div>
+<div id="home"><svg width="170" height="128" viewBox="0 0 150 100" preserveAspectRatio="xMidYMid meet" style="margin-bottom:18px"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d27a"/><stop offset="1" stop-color="#b8860b"/></linearGradient><linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b23c"/><stop offset="1" stop-color="#a87f12"/></linearGradient></defs><circle cx="75" cy="46" r="43" fill="url(#bg2)" stroke="#f3d27a" stroke-width="2"/><rect x="43" y="27" width="18" height="4" rx="2" fill="#f3d27a"/><rect x="89" y="27" width="18" height="4" rx="2" fill="#f3d27a"/><path d="M50 48 l7 -11 h36 l7 11" fill="none" stroke="#3a2c05" stroke-width="3" stroke-linejoin="round"/><rect x="39" y="46" width="72" height="14" rx="3" fill="#f3d27a"/><circle cx="56" cy="62" r="7.5" fill="#3a2c05"/><circle cx="56" cy="62" r="3" fill="#f3d27a"/><circle cx="94" cy="62" r="7.5" fill="#3a2c05"/><circle cx="94" cy="62" r="3" fill="#f3d27a"/><rect x="46" y="74" width="58" height="3" rx="1.5" fill="#8a6a0e"/><text x="75" y="97" text-anchor="middle" font-family="Georgia,serif" font-size="13" letter-spacing="6" fill="url(#lg)">GAMES</text></svg><h1>DRIVE TO EMPIRE</h1><div style="color:#b8860b">TRUCKRES</div><div id="cn" style="font-size:18px;margin:8px"></div>
+<button class="b" onclick="chg(-1)">PREV CAR</button><button class="b" onclick="chg(1)">NEXT CAR</button><button class="b" id="bb" onclick="bsel()">SELECT</button><button class="b" id="ab" onclick="parea()">AREA</button><button class="b" onclick="play()">PLAY</button><div id="btnbox"></div></div>
 <div id="apn" style="position:absolute;inset:0;z-index:9;background:#000e;display:none;overflow:auto;padding:14px;box-sizing:border-box;font-size:14px;touch-action:pan-y"></div>
 <div id="hud"><div id="h1"></div><div id="h2"></div></div><button class="b" id="vb" onclick="vmod()">VIEW: CHASE</button><canvas id="mm" width="90" height="120" style="position:absolute;top:64px;left:8px;border:1px solid #b8860b;border-radius:8px;background:#000a;display:none;pointer-events:none"></canvas><div id="msg"></div><button class="b" id="ex" onclick="quit()">EXIT</button>
 <div class="k" id="kl" style="left:10px"><button data-k="l">LEFT</button><button data-k="r">RIGHT</button></div>
@@ -384,4 +387,20 @@ function frame(t){if(!run)return;requestAnimationFrame(frame);const dt=Math.min(
 gref();
 </script>
 <script src="./update.js"></script>
+<script>
+/* Arrange the 6 home buttons into a 2-row grid (3 + 3) */
+(function(){
+ const box=document.getElementById('btnbox'),home=document.getElementById('home');
+ if(!box)return;
+ const want=['PREV CAR','NEXT CAR','SELECT','SELECTED','AREA','MISSIONS','PLAY'];
+ const btns=[];
+ home.querySelectorAll(':scope > button.b').forEach(b=>{
+   if(b.id==='ex'||b.id==='vb')return;
+   btns.push(b);
+ });
+ const rank=b=>{let t=b.textContent.trim();if(t.startsWith('AREA'))return want.indexOf('AREA');if(t.startsWith('SELECT'))return want.indexOf('SELECT');if(t==='SELECTED')return want.indexOf('SELECTED');return want.indexOf(t)};
+ btns.sort((a,b)=>rank(a)-rank(b));
+ btns.forEach(b=>box.appendChild(b));
+})();
+</script>
 </body></html>
