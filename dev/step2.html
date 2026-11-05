@@ -103,7 +103,7 @@ const fm=new THREE.MeshStandardMaterial({color:0x43a047,roughness:.9}),tm=new TH
 function mkTree(){const g=new THREE.Group(),a=(geo,m,y)=>{const o=new THREE.Mesh(geo,m);o.position.y=y;o.castShadow=true;g.add(o)};a(new THREE.CylinderGeometry(.2,.3,2.2,6),tm,1.1);a(new THREE.ConeGeometry(1.8,3.5,8),fm,3.6);a(new THREE.ConeGeometry(1.3,2.8,8),fm,5.3);return g}
 const PL=60,TR=[];for(let k=0;k<PL;k++){const t=mkTree(),b=new THREE.Mesh(new THREE.BoxGeometry(8,1,8),bm);b.castShadow=true;sc.add(t,b);TR.push({t,b})}
 function place(base){for(let k=0;k<PL;k++){let n=Math.floor(base/PL)*PL+k;if(n<base)n+=PL;const h=Math.abs(Math.sin(n*12.9898)*43758.5453)%1,p=at(n*8,((n&1)?1:-1)*(RW+6+h*12)),{t,b}=TR[k],bd=AI==0?h>.6:AI==1?h>.92:false;t.visible=!bd;b.visible=bd;const o=bd?b:t;o.position.set(p.x,0,p.z);if(bd){b.scale.y=8+h*30;b.position.y=b.scale.y/2;b.rotation.y=-p.t}}}
-const glow=new THREE.CanvasTexture(tex(64,64,g=>{const r=g.createRadialGradient(32,32,0,32,32,32);r.addColorStop(0,'rgba(255,240,170,1)');r.addColorStop(1,'rgba(255,220,120,0)');g.fillStyle=r;g.fillRect(0,0,64,64)}).image),hm=new THREE.MeshStandardMaterial({color:0xffffee,emissive:0xffe9a0,emissiveIntensity:0}),gmat=new THREE.SpriteMaterial({map:glow,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false});
+const glow=new THREE.CanvasTexture(tex(64,64,g=>{const r=g.createRadialGradient(32,32,0,32,32,32);r.addColorStop(0,'rgba(255,240,170,1)');r.addColorStop(1,'rgba(255,220,120,0)');g.fillStyle=r;g.fillRect(0,0,64,64)}).image),hm=new THREE.MeshStandardMaterial({color:0x9aa0a6,emissive:0xffe9a0,emissiveIntensity:0}),gmat=new THREE.SpriteMaterial({map:glow,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false});
 const LPN=16,LP=[];for(let k=0;k<LPN;k++){const g=new THREE.Group(),pole=new THREE.Mesh(new THREE.CylinderGeometry(.08,.1,7,8),bk0()),head=new THREE.Mesh(new THREE.BoxGeometry(.9,.12,.35),hm),sp=new THREE.Sprite(gmat);pole.position.y=3.5;head.position.set(.7,7,0);sp.position.set(.7,6.9,0);sp.scale.set(7,7,1);g.add(pole,head,sp);sc.add(g);LP.push(g)}
 function bk0(){return new THREE.MeshStandardMaterial({color:0x444444,metalness:.6,roughness:.5})}
 function placeL(base){for(let k=0;k<LPN;k++){LP[k].visible=AI<2;let n=Math.floor(base/LPN)*LPN+k;if(n<base)n+=LPN;const side=(n&1)?1:-1,p=at(n*24,side*(RW+.8));LP[k].position.set(p.x,0,p.z);LP[k].rotation.y=side>0?-p.t+Math.PI:-p.t}}
@@ -266,7 +266,13 @@ const SKc=[0x78b4f0,0xff9a64,0x050816,0x9aaabb].map(c=>new THREE.Color(c)),LL=[1
 function env(){const ph=(clk/45)%4,i=ph|0,f=ph-i,j=(i+1)%4,se=lvl()>=3?(clk/90|0)%6:0,c=SKc[i].clone().lerp(SKc[j],f),l=LL[i]+(LL[j]-LL[i])*f;if(se==2)c.multiplyScalar(.7);sc.background=c;sc.fog.color.copy(c);sc.fog.near=se==5?25:60;sc.fog.far=se==5?200:se==2?240:380;
  sun.intensity=.15+1.3*l;hemi.intensity=.15+.7*l;const u=ph>=3?ph-3:ph<2?ph+1:-1,a=u<0?1.3:u/3*Math.PI;sun.color.set(u<0?0x7788bb:l<.7?0xffb070:0xffffff);
  const cx=car.m?car.m.position.x:0,cz=car.m?car.m.position.z:0;sun.position.set(cx+Math.cos(a)*80,Math.max(15,Math.sin(a)*80),cz+30);sun.target.position.set(cx,0,cz);
- const nt=1-l;hm.emissiveIntensity=nt*3;gmat.opacity=nt;gm.color.setHex(GRc[se]);fm.color.setHex(FOc[se]);return[i,se]}
+ const nt=1-l;
+ /* ===== STREET LAMP AUTO (day off / dusk+night on) ===== */
+ const lampOn=Math.max(0,Math.min(1,(nt-0.35)/0.4));   // 0 in day, ramps on at dusk, 1 at night
+ hm.emissiveIntensity=lampOn*3;
+ hm.color.setRGB(0.60+0.40*lampOn,0.63+0.37*lampOn,0.65+0.35*lampOn); // grey by day, warm white when lit
+ gmat.opacity=lampOn;
+ gm.color.setHex(GRc[se]);fm.color.setHex(FOc[se]);return[i,se]}
 function act(){if(!run)return;if(Math.abs(car.v)>2.5){msg('Stop first');return}
  for(const p of PAS){if(p.s>0&&Math.abs(p.s-car.s)<9){if(car.pax>=3){msg('Car full');return}car.pax++;p.s=-99;if(!dest){dest={s:car.s+500+Math.random()*500};tlim=(dest.s-car.s)/12+15;el=0;destM.visible=true}msg('Passenger aboard');tone(700,.15);return}}
  if(dest&&car.pax&&Math.abs(dest.s-car.s)<12){const b=Math.max(0,Math.round((tlim-el)*8));pay(car.pax*500+b);msg('Fare +$'+(car.pax*500+b));car.pax=0;dest=null;destM.visible=false;tone(900,.2);return}
