@@ -65,7 +65,7 @@ function pt(i){
     if(!_isTurn&&_straightRemain<=0)_planNext();
     if(_isTurn&&_turnRemain<=0)_planNext();
     if(_isTurn){
-      const R=ST*4.5,step=Math.min(ST,_turnRemain*R),dth=step/R;
+      const R=ST*7.5,step=Math.min(ST,_turnRemain*R),dth=step/R;
       const cx=q.x+Math.cos(q.t)*R*_turnSign, cz=q.z+Math.sin(q.t)*R*_turnSign;
       const ang=Math.atan2(q.z-cz,q.x-cx)+_turnSign*dth;
       P.push({x:cx+Math.cos(ang)*R,z:cz+Math.sin(ang)*R,t:q.t+_turnSign*dth});
@@ -177,7 +177,7 @@ function game(dt){const L=lvl();el+=dt;
  if(dest){const q=at(dest.s,RW+2.5);destM.position.set(q.x,8,q.z);if(dest.s<car.s-20){dest=null;car.pax=0;destM.visible=false;msg('Missed destination')}}
  if(STA.s<car.s-30)STA.s=car.s+900+Math.random()*800;{const q=at(STA.s,RW+4);STA.m.position.set(q.x,0,q.z);STA.m.rotation.y=-q.t;STA.m.visible=L>=4}
  if(L>=4){car.fuel=Math.max(0,car.fuel-dt*(.08+Math.abs(car.v)/(CARS[S.cur].v/3.6)*.35+(KY.g?.08:0)));if(car.fuel<=0&&car.v>0){car.v=Math.max(0,car.v-6*dt);msg('Out of fuel - find a station')}}
- if(L>=5){const kmh=car.v*3.6,LM=AR[AI].lim+5;if(kmh>LM)ot+=dt;else ot=Math.max(0,ot-dt);if(ot>3&&!pol){pol={s:car.s-60};polM.visible=true;msg('POLICE! Slow down!')}
+ if(L>=5){const kmh=car.v*3.6,LM=AR[AI].lim+5;if(kmh>LM)ot+=dt;else ot=Math.max(0,ot-dt*2);if(ot>6&&!pol){pol={s:car.s-60};polM.visible=true;msg('POLICE! Slow down!')}
   if(pol){pol.s+=((kmh>LM?car.v*1.12+6:car.v*.75)*dt);sir+=dt;if(sir>.5){sir=0;tone(Math.random()<.5?700:900,.4,'square',.04)}const q=at(pol.s,car.lat);polM.position.set(q.x,0,q.z);polM.rotation.y=-q.t;const fl=Math.sin(clk*14)>0;pr.emissiveIntensity=fl?3:.2;pb.emissiveIntensity=fl?.2:3;
    if(pol.s>=car.s-4){const f=Math.min(S.money,600);S.money-=f;pol=null;polM.visible=false;ot=0;msg('Caught! Fine -$'+f)}else if(pol.s<car.s-300){pol=null;polM.visible=false;ot=0;pay(100);msg('Escaped! +$100')}}}}
 /* ===== CHECKPOINT LOGIC (replaces old always-on police) ===== */
@@ -204,13 +204,13 @@ function updCheckpoints(dt){
       c.bar.material.emissiveIntensity=.6;
       if(dist<28&&dist>0){c.state=1;c.wait=0;msg('CHECKPOINT - STOP!');tone(500,.3,'square',.05)}
     }else if(c.state==1){
-      // must stop for 3 seconds
+      // must stop briefly (easy: 0.8s, tolerant speed)
       const kmh=Math.abs(car.v)*3.6;
-      if(dist<7&&dist>-3){
-        if(kmh<6){c.wait+=dt;c.bar.material.emissiveIntensity=1.5;
-          if(c.wait>=3){c.state=2;c.passed=1;pay(80);msg('Checkpoint cleared +$80');tone(900,.2)}
+      if(dist<14&&dist>-4){
+        if(kmh<18){c.wait+=dt;c.bar.material.emissiveIntensity=1.5;
+          if(c.wait>=0.8){c.state=2;c.passed=1;pay(80);msg('Checkpoint cleared +$80');tone(900,.2)}
         }else{c.wait=Math.max(0,c.wait-dt*.5)}
-      }else if(dist<=-3){
+      }else if(dist<=-4){
         // drove through without stopping
         c.state=3;c.wait=0;pol={s:car.s-55};polM.visible=true;msg('CHECKPOINT RUN! POLICE CHASING!');tone(300,.6,'square',.06)
       }
@@ -244,9 +244,10 @@ function mm(){const w=90,h=120,cp=car.m.position,t=at(car.s,car.lat).t,sn=Math.s
 // loop
 function frame(t){if(!run)return;requestAnimationFrame(frame);const dt=Math.min(.05,(t-last)/1e3);last=t;clk+=dt;const c=CARS[S.cur],vm=c.v/3.6;
  car.st+=(((KY.r?1:0)-(KY.l?1:0))-car.st)*Math.min(1,dt*7);
+ const _cv=Math.abs(curv(car.s+10));if(_cv>0.02)car.v*=1-Math.min(.5,_cv*14)*dt;   // auto slow in turns
  if(KY.g&&!(lvl()>=4&&car.fuel<=0))car.v+=14*dt*(1-Math.max(0,car.v)/vm*.8);if(KY.b){if(car.v>0)car.v=Math.max(0,car.v-30*dt);else car.v-=4*dt}
  car.v-=Math.sign(car.v)*(.5+Math.abs(car.v)*.02)*dt;car.v=Math.max(-8,Math.min(vm,car.v));if(Math.abs(car.v)<.15&&!KY.g&&!KY.b)car.v=0;
- car.lat+=car.st*dt*(2.4*(.5+.5*Math.min(1,Math.abs(car.v)/12)))-curv(car.s+10)*car.v*car.v*dt*.35;
+ car.lat+=car.st*dt*(2.4*(.5+.5*Math.min(1,Math.abs(car.v)/12)))-curv(car.s+10)*car.v*car.v*dt*.18;
  if(Math.abs(car.lat)>RW+.3)car.v*=1-1.5*dt;car.lat=Math.max(-RW-3,Math.min(RW+3,car.lat));
  const ps=car.s;car.s=Math.max(0,car.s+car.v*dt);acc+=Math.abs(car.v)*dt;if(acc>50){acc-=50;pay(5)}
  const p=at(car.s,car.lat),yaw=car.st*.1;car.m.position.set(p.x,0,p.z);car.m.rotation.set(-car.st*car.v*.0015,-(p.t+yaw),0,'YXZ');car.m.userData.tl.emissiveIntensity=KY.b&&car.v>1?3.5:1.2;
