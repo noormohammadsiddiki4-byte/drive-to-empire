@@ -250,6 +250,126 @@ for(let k=0;k<TLN;k++){const g=new THREE.Group(),pole=new THREE.Mesh(new THREE.C
 const tls=n=>{const t=(clk+n*3.7)%14;return t<6?0:t<8?1:2};
 function upTL(ps){TL.forEach(t=>t.g.visible=t.ln.visible=AI==0);if(AI)return;const b=Math.max(0,Math.floor((car.s-210)/400));for(let k=0;k<TLN;k++){let n=Math.floor(b/TLN)*TLN+k;if(n<b)n+=TLN;const t=TL[k],s=200+400*n,p=at(s,RW+.9),q=at(s-3,0),st=tls(n);t.g.position.set(p.x,0,p.z);t.g.rotation.y=-p.t;t.ln.position.set(q.x,.04,q.z);t.ln.rotation.set(-Math.PI/2,-q.t,0);t.mats.forEach((m,j)=>m.emissiveIntensity=j==2-st?2.5:.08);
   if(ps<s-3&&car.s>=s-3&&st==2&&Math.abs(car.v)>4){S.money=Math.max(0,S.money-50);msg('Red light! -$50',3)}}}
+
+/* ===== STEP 4: INTERSECTIONS & CROSSINGS ===== */
+// At every traffic light we now build a real crossing:
+//   • zebra stripes painted on the road
+//   • a side road branching off to one side
+//   • pedestrians who actually cross the road (only on green)
+//   • stop line + corner kerb dots
+const ISN=4, IS=[];                       // intersections (mirrors TLN)
+const zebraTex=tex(64,64,g=>{
+  g.fillStyle='#2f2f34';g.fillRect(0,0,64,64);
+  g.fillStyle='#e9e9e9';
+  for(let i=0;i<4;i++)g.fillRect(i*16+3,0,9,64);
+});
+const zebraMat=new THREE.MeshBasicMaterial({map:zebraTex,transparent:true,opacity:.95});
+const sideRoadMat=new THREE.MeshStandardMaterial({color:0x3b3b41,roughness:.9});
+const stopLineMat=new THREE.MeshBasicMaterial({color:0xffffff});
+for(let k=0;k<ISN;k++){
+  const g=new THREE.Group();
+  // zebra crossing (across the main road)
+  const zebra=new THREE.Mesh(new THREE.PlaneGeometry(RW*2,2.6),zebraMat);
+  zebra.rotation.order='YXZ';
+  // side road (a stub branching to the right, 40 long)
+  const side=new THREE.Mesh(new THREE.PlaneGeometry(RW,44),sideRoadMat);
+  side.rotation.order='YXZ';
+  // stop line (before the zebra)
+  const stop=new THREE.Mesh(new THREE.PlaneGeometry(RW*2,.5),stopLineMat);
+  stop.rotation.order='YXZ';
+  // corner kerb dots (4 small rounded blocks at the junction corners)
+  const corners=[];
+  for(const sx of[-1,1])for(const sz of[-1,1]){
+    const c=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,.3,10),
+      new THREE.MeshStandardMaterial({color:0xd8d4cc,roughness:.9}));
+    c.position.set(sx*(RW+.35),.15,sz*1.6);corners.push(c);
+  }
+  g.add(zebra,side,stop,...corners);
+  g.traverse(o=>{if(o.isMesh)o.receiveShadow=true});
+  sc.add(g);
+  IS.push({g,zebra,side,stop,corners,s:-999,side_dir:1});
+}
+// --- crossing pedestrians: a small pool that walks ACROSS at intersections ---
+const XPN=10, XROSS=[];
+const xrossCols=[0xef5350,0x42a5f5,0xffca28,0xab47bc,0x26a69a,0xff7043,0xd4e157,0x8d6e63,0xec407a,0x29b6f6];
+function mkXrosser(){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.2,.24,1.0,10),
+    new THREE.MeshStandardMaterial({color:xrossCols[Math.random()*xrossCols.length|0],roughness:.85}));
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.17,10,10),
+    new THREE.MeshStandardMaterial({color:0xe0b896,roughness:.7}));
+  const l1=new THREE.Mesh(new THREE.BoxGeometry(.13,.5,.13),new THREE.MeshStandardMaterial({color:0x2c3e50})),l2=l1.clone();
+  body.position.y=1.0;head.position.y=1.62;l1.position.set(-.1,.26,0);l2.position.set(.1,.26,0);
+  g.add(body,head,l1,l2);g.traverse(o=>o.castShadow=true);
+  g.userData.legs=[l1,l2];
+  return g;
+}
+for(let k=0;k<XPN;k++){const m=mkXrosser();m.visible=false;sc.add(m);
+  XROSS.push({m,is:-1,t:0,dir:1,spd:.9+Math.random()*.7,ph:Math.random()*6,waiting:0})}
+// --- intersection update ---
+function updIntersections(){
+  const city=(AI==0);
+  const b=Math.max(0,Math.floor((car.s-210)/400));
+  for(let k=0;k<ISN;k++){
+    const it=IS[k];
+    it.g.visible=city;
+    if(!city)continue;
+    let n=Math.floor(b/ISN)*ISN+k;if(n<b)n+=ISN;
+    const s=200+400*n, st=tls(n);
+    const q=at(s,0),p=at(s,RW+.9);
+    it.s=s;it.st=st;
+    // group sits at the junction, rotated to the road heading
+    it.g.position.set(q.x,0,q.z);
+    it.g.rotation.y=-q.t;
+    // zebra a bit past the light, stop line before it
+    it.zebra.position.set(0,.045,4.2);it.zebra.rotation.set(-Math.PI/2,0,0);
+    it.stop.position.set(0,.05,-1.2);it.stop.rotation.set(-Math.PI/2,0,0);
+    // side road branches to the right (local +X)
+    it.side.position.set(RW+22,.03,4.2);it.side.rotation.set(-Math.PI/2,0,0);
+    it.side_dir=1;
+  }
+}
+// --- crossing pedestrians logic ---
+function updXrossers(dt){
+  const city=(AI==0);
+  for(const c of XROSS){
+    c.m.visible=city;
+    if(!city)continue;
+    // pick an intersection ahead when idle
+    if(c.is<0||Math.abs(IS[c.is].s-car.s)>260){
+      c.is=Math.floor(Math.random()*ISN);
+      c.t=Math.random()<.5?0:1;              // start on either side
+      c.dir=c.t<.5?1:-1;
+      c.waiting=0;
+      c.m.visible=city;
+    }
+    const it=IS[c.is];
+    if(!it||it.g.visible===false)continue;
+    // only walk while the light is RED for cars (green for pedestrians)
+    const safe=(it.st===0);
+    if(!safe&&c.t>0.02&&c.t<0.98){c.waiting+=dt;continue;}
+    // advance across the road (t goes 0 -> 1)
+    c.t+=c.dir*c.spd*dt/ (RW*2+2);
+    if(c.t>=1){c.t=1;c.dir=-1}
+    if(c.t<=0){c.t=0;c.dir=1}
+    // world position: at intersection s, lateral from -RW-1 to +RW+1
+    const lat=(-RW-1)+c.t*(RW*2+2);
+    const q=at(it.s+4.2,lat);
+    c.m.position.set(q.x,0,q.z);
+    c.m.rotation.y=-q.t+(c.dir>0?0:Math.PI);
+    c.ph+=dt*c.spd*7;
+    const sw=Math.sin(c.ph)*.35;
+    c.m.userData.legs[0].rotation.x=sw;c.m.userData.legs[1].rotation.x=-sw;
+    // gentle warning if the car drives into a crossing pedestrian
+    const ds=(it.s+4.2)-car.s, dl=Math.abs(lat-car.lat);
+    if(ds>-1.8&&ds<1.8&&dl<RW-0.3&&Math.abs(car.v)>4){
+      car.v*=.7;
+      if(msg('Careful! Crossing!',6))tone(240,.3,'square',.05);
+    }
+  }
+}
+/* ===== END STEP 4 ===== */
+
 // state
 let clk=0,run=0,last=0,KY={},car={s:0,lat:0,v:0,st:0,m:null,fuel:100,pax:0},acc=0,msgT=0,sv=0,dest=null,tlim=0,el=0,pol=null,ot=0,sir=0;
 // msg(t, cool, kind): 'cool' = seconds before the SAME message can repeat.
@@ -355,7 +475,7 @@ function frame(t){if(!run)return;requestAnimationFrame(frame);const dt=Math.min(
  const p=at(car.s,car.lat),yaw=car.st*.1;car.m.position.set(p.x,0,p.z);car.m.rotation.set(-car.st*car.v*.0015,-(p.t+yaw),0,'YXZ');car.m.userData.tl.emissiveIntensity=KY.b&&car.v>1?3.5:1.2;
  for(const t of TRF){if(t.s<car.s-30||t.s>car.s+500){t.s=car.s+90+Math.random()*300;t.lat=LANES[Math.random()<.5?0:2];t.v=(7+Math.random()*8)*(AI==1?1.8:1)}t.s+=t.v*dt;const q=at(t.s,t.lat);t.m.position.set(q.x,0,q.z);t.m.rotation.y=-q.t;const ds=t.s-car.s;if(ds>-4.5&&ds<4.8&&Math.abs(t.lat-car.lat)<2.1){car.v*=.35;t.s=car.s+400;msg('Crash!',2)}}
  for(const k of COIN){if(k.s<car.s-10){k.s=car.s+40+Math.random()*250;k.lat=LANES[Math.random()*3|0]}const q=at(k.s,k.lat);k.m.position.set(q.x,1,q.z);k.m.rotation.y+=dt*3;if(Math.abs(k.s-car.s)<2.5&&Math.abs(k.lat-car.lat)<2){pay(25);k.s=-99}}
- const[i,se]=env();updRoad();upTL(ps);game(dt);updCheckpoints(dt);updPeds(dt);updShops();place(Math.max(0,Math.floor(car.s/8)-4));placeH(Math.max(0,Math.floor(car.s/80)-3));placeL(Math.max(0,Math.floor(car.s/24)-2));ground.position.set(p.x,0,p.z);gt.offset.set(p.x/5,-p.z/5);
+ const[i,se]=env();updRoad();upTL(ps);updIntersections();game(dt);updCheckpoints(dt);updPeds(dt);updXrossers(dt);updShops();place(Math.max(0,Math.floor(car.s/8)-4));placeH(Math.max(0,Math.floor(car.s/80)-3));placeL(Math.max(0,Math.floor(car.s/24)-2));ground.position.set(p.x,0,p.z);gt.offset.set(p.x/5,-p.z/5);
  const cp=at(car.s-8.5,car.lat*.7),lk=at(car.s+14,car.lat*.5),sk=Math.abs(car.lat)>RW?Math.random()*.08:0;cam.position.lerp(new THREE.Vector3(cp.x,3.4+sk,cp.z),Math.min(1,dt*6));cam.lookAt(lk.x,1.2,lk.z);cam.fov=60+Math.abs(car.v)*.6;cam.updateProjectionMatrix();
  sv+=dt;if(sv>5){sv=0;save()}if(msgT>0){msgT-=dt;if(msgT<=0)$('msg').textContent=''}
  $('h1').textContent=`${Math.abs(car.v*3.6|0)} km/h  $${S.money|0}`;$('h2').textContent=`${AR[AI].n} | Lv${lvl()} ${LN[lvl()-1]} | ${PH[i]}${lvl()>=3?' | '+SE[se]:''}${lvl()>=4?' | Fuel '+(car.fuel|0)+'%':''}${car.pax?' | Pax '+car.pax+' T '+Math.max(0,tlim-el|0)+'s':''}`;
