@@ -1,5 +1,5 @@
 /* Drive to Empire 3D — offline service worker */
-const CACHE = 'dte3d-cache-v5';
+const CACHE = 'dte3d-cache-v6';
 const ASSETS = [
   './',
   './index.html',
