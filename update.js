@@ -202,7 +202,72 @@ const _f=frame;frame=function(t){
  if(car.fuel>lastFuel+20)ev('fuel',1);lastFuel=car.fuel;
  if(typeof CPS!=='undefined'&&CPS){const done=CPS.filter(c=>c.passed).length;if(done>lastCp){ev('cp',done-lastCp);lastCp=done}}
  if(typeof TRF!=='undefined'&&TRF)TRF.forEach(t=>{if(t.s>0&&Math.abs(t.s-car.s)<3&&!t._ot){t._ot=1;ev('overtake',1)}else if(Math.abs(t.s-car.s)>8)t._ot=0});
+ trafficCheckpoints(dt);
  ps=car.s;
  if((sa+=dt)>3){sa=0;save2()}
 };
+
+/* ============================================================
+   TRAFFIC STOPS AT CHECKPOINTS  (sir's request 2026-11-06)
+   Rule: ALL traffic cars stop at a checkpoint — or NONE do.
+   City area only.
+   Per checkpoint: one car is released at a time and is allowed
+   to keep going until it fully clears the zone; only then may
+   the next car be released. Result: a realistic, slow-moving
+   queue that never jams and never lets two cars cross at once.
+   ============================================================ */
+const TRF_GAP=10;        // metres before the bar where cars halt
+const TRF_QUEUE=36;      // queue zone behind the bar
+const TRF_RELEASE=1.0;   // seconds between releasing cars
+
+function trafficCheckpoints(dt){
+  if(typeof CPS==='undefined'||typeof TRF==='undefined')return;
+  if(typeof AI!=='undefined'&&AI!==0)return;   // City only
+
+  for(const c of CPS){
+    if(!c.g.visible)continue;
+    if(c._gate===undefined)c._gate=0;
+    if(c._goCar===undefined)c._goCar=null;
+
+    // is the currently released car still inside the zone?
+    const g=c._goCar;
+    if(g){
+      const gd=c.s-g.s;                    // >0 = still before the bar
+      if(g.s<=0 || gd<-14){                 // gone / fully cleared
+        c._goCar=null;
+      }
+    }
+
+    // cars in the zone (behind the bar)
+    const zone=[];
+    for(const t of TRF){
+      if(t.s<=0)continue;
+      const d=c.s-t.s;
+      if(d>=-14 && d<TRF_QUEUE) zone.push({t,d});
+    }
+    if(!zone.length){c._gate=0;continue}
+    zone.sort((a,b)=>a.d-b.d);
+
+    // release the next car only when none is currently crossing
+    if(!c._goCar){
+      c._gate-=dt;
+      if(c._gate<=0){
+        c._goCar=zone[0].t;    // front car becomes the go-car
+        c._gate=TRF_RELEASE;
+      }
+    }
+
+    for(const z of zone){
+      const t=z.t;
+      if(t===c._goCar){
+        t._hold=false;         // let it drive through
+      }else{
+        t._hold=true;
+        const stopS=c.s-TRF_GAP;
+        if(t.s>stopS){t.s=stopS}
+        const q=at(t.s,t.lat);t.m.position.set(q.x,0,q.z);t.m.rotation.y=-q.t;
+      }
+    }
+  }
+}
 })();
