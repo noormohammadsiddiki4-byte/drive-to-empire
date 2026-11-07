@@ -35,7 +35,7 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 <script src="./three.min.js"></script>
 <script>
 /* PWA: offline service worker */
-if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=11',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
+if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=12',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
 </script>
 <script>
 const $=i=>document.getElementById(i);
@@ -87,14 +87,14 @@ function pt(i){
   return P[i];
 }
 
-function at(s,lat){s=Math.max(0,s);const i=Math.floor(s/ST),f=s/ST-i,a=pt(i),b=pt(i+1),t=a.t+(b.t-a.t)*f;return{x:a.x+(b.x-a.x)*f+Math.cos(t)*lat,z:a.z+(b.z-a.z)*f+Math.sin(t)*lat,t}}
-const curv=s=>{const i=Math.floor(Math.max(0,s)/ST);return(pt(i+1).t-pt(i).t)/ST};
+function at(s,lat){const i=Math.floor(s/ST),f=s/ST-i,a=pt(i),b=pt(i+1),t=a.t+(b.t-a.t)*f;return{x:a.x+(b.x-a.x)*f+Math.cos(t)*lat,z:a.z+(b.z-a.z)*f+Math.sin(t)*lat,t}}
+const curv=s=>{const i=Math.floor(s/ST);return(pt(i+1).t-pt(i).t)/ST};
 function tex(w,h,fn,rep){const c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'));const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=8;if(rep)t.repeat.set(rep,rep);return t}
 const rt=tex(64,128,g=>{g.fillStyle='#3b3b41';g.fillRect(0,0,64,128);for(let i=0;i<600;i++){const v=Math.random()*70|0;g.fillStyle=`rgba(${v},${v},${v},.3)`;g.fillRect(Math.random()*64,Math.random()*128,2,2)}g.fillStyle='#e8e8e8';g.fillRect(2,0,3,128);g.fillRect(59,0,3,128);g.fillStyle='#f3d27a';g.fillRect(30,0,4,32)});
 const N=90,rg=new THREE.BufferGeometry(),rp=new Float32Array((N+1)*6),ru=new Float32Array((N+1)*4),ri=[];for(let i=0;i<N;i++){const a=i*2;ri.push(a,a+1,a+2,a+1,a+3,a+2)}
 rg.setIndex(ri);rg.setAttribute('position',new THREE.BufferAttribute(rp,3));rg.setAttribute('uv',new THREE.BufferAttribute(ru,2));
 const road=new THREE.Mesh(rg,new THREE.MeshStandardMaterial({map:rt,roughness:.85,side:THREE.DoubleSide}));road.receiveShadow=true;road.frustumCulled=false;sc.add(road);
-function updRoad(){const b=Math.max(0,Math.floor(car.s/ST)-14);const off=Math.max(0,14-Math.floor(car.s/ST));for(let i=0;i<=N;i++){const n=b+i,q=pt(n),c=Math.cos(q.t),s=Math.sin(q.t);rp.set([q.x-c*RW,.02,q.z-s*RW,q.x+c*RW,.02,q.z+s*RW],i*6);ru.set([0,n*ST/8,1,n*ST/8],i*4)}rg.attributes.position.needsUpdate=true;rg.attributes.uv.needsUpdate=true}
+function updRoad(){const b=Math.floor(car.s/ST)-20;for(let i=0;i<=N;i++){const n=b+i,q=pt(n),c=Math.cos(q.t),s=Math.sin(q.t);rp.set([q.x-c*RW,.02,q.z-s*RW,q.x+c*RW,.02,q.z+s*RW],i*6);ru.set([0,n*ST/8,1,n*ST/8],i*4)}rg.attributes.position.needsUpdate=true;rg.attributes.uv.needsUpdate=true}
 const gt=tex(128,128,g=>{for(let i=0;i<2500;i++){const v=170+Math.random()*85|0;g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(Math.random()*128,Math.random()*128,2,2)}},240);
 const gm=new THREE.MeshStandardMaterial({map:gt,color:0x388e3c,roughness:1}),ground=new THREE.Mesh(new THREE.PlaneGeometry(1200,1200),gm);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;sc.add(ground);
 // cars
@@ -269,13 +269,14 @@ function upTL(ps){TL.forEach(t=>t.g.visible=t.ln.visible=AI==0);if(AI)return;con
 
 // state
 let clk=0,run=0,last=0,KY={},car={s:0,lat:0,v:0,st:0,m:null,fuel:100,pax:0},acc=0,msgT=0,sv=0,dest=null,tlim=0,el=0,pol=null,ot=0,sir=0;
+const S0=2000;   // start offset: road is pre-built behind the car so it never disappears
 // msg(t, cool, kind): 'cool' = seconds before the SAME message can repeat.
 // Prevents the annoying "Careful! Pedestrian!" spam every frame.
 let _msgLast={},_msgAt=-99;
 function msg(t,cool,kind){const now=clk;if(cool&&_msgLast[t]&&now-_msgLast[t]<cool)return false;
   _msgLast[t]=now;$('msg').textContent=t;msgT=1.8;return true}
 function chg(d){gi=(gi+d+CARS.length)%CARS.length;gref()}
-function play(){if(lvl()<AR[AI].min)return;engStart();P.length=1;_plan=[];_pi=0;_isTurn=false;_straightRemain=0;_turnRemain=0;AM=AR[AI].amp;$('home').style.display='none';['hud','ex','vb'].forEach(i=>$(i).style.display='flex');$('mm').style.display='block';$('kl').style.display=$('kr').style.display='flex';if(car.m)sc.remove(car.m);car.m=makeCar(S.cur);sc.add(car.m);Object.assign(car,{s:0,lat:0,v:0,st:0,fuel:100,pax:0});dest=null;destM.visible=false;pol=null;polM.visible=false;ot=0;PAS.forEach(p=>p.s=-99);STA.s=700;TRF.forEach(t=>t.s=-999);COIN.forEach(c=>c.s=-99);CPS.forEach((c,k)=>{c.s=350+k*CPSSPACING;c.state=0;c.wait=0;c.passed=0});const p=at(-8,0);cam.position.set(p.x,3.4,p.z);run=1;last=performance.now();requestAnimationFrame(frame)}
+function play(){if(lvl()<AR[AI].min)return;engStart();P.length=1;_plan=[];_pi=0;_isTurn=false;_straightRemain=0;_turnRemain=0;AM=AR[AI].amp;$('home').style.display='none';['hud','ex','vb'].forEach(i=>$(i).style.display='flex');$('mm').style.display='block';$('kl').style.display=$('kr').style.display='flex';if(car.m)sc.remove(car.m);car.m=makeCar(S.cur);sc.add(car.m);Object.assign(car,{s:S0,lat:0,v:0,st:0,fuel:100,pax:0});dest=null;destM.visible=false;pol=null;polM.visible=false;ot=0;PAS.forEach(p=>p.s=-99);STA.s=S0+700;TRF.forEach(t=>t.s=-999);COIN.forEach(c=>c.s=-99);CPS.forEach((c,k)=>{c.s=S0+350+k*CPSSPACING;c.state=0;c.wait=0;c.passed=0});const p=at(S0-8,0);cam.position.set(p.x,3.4,p.z);run=1;last=performance.now();requestAnimationFrame(frame)}
 function quit(){run=0;if(eg)eg.gain.value=0;save();$('home').style.display='flex';['hud','ex','vb'].forEach(i=>$(i).style.display='none');$('mm').style.display='none';$('kl').style.display=$('kr').style.display='none';gi=S.cur;gref()}
 document.querySelectorAll('[data-k]').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{b.setPointerCapture(e.pointerId);KY[k]=1;if(k=='a')act()});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>KY[k]=0))});
 const KM={ArrowLeft:'l',ArrowRight:'r',ArrowUp:'g',ArrowDown:'b'};addEventListener('keydown',e=>{if(e.key==' ')act();if(e.key=='v'||e.key=='V')vmod();if(KM[e.key])KY[KM[e.key]]=1});addEventListener('keyup',e=>{if(KM[e.key])KY[KM[e.key]]=0});
