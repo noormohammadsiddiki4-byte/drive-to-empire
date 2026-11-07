@@ -15,6 +15,16 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 #btnbox{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(92vw,420px)}
 #btnbox .b{min-width:0;width:100%;padding:13px 8px;font-size:15px}
 #btnbox #bb{grid-column:1/3}
+#btnbox #pb{grid-column:1/3}
+#logoWrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin-bottom:4px;width:100%}
+#logoCar{width:min(58vw,240px);height:auto;display:block;filter:drop-shadow(0 6px 18px #000b)}
+#logoType{font-family:'Arial Black','Segoe UI',Impact,system-ui,sans-serif;font-weight:900;font-style:italic;font-size:clamp(30px,10vw,50px);letter-spacing:1px;line-height:.98;text-align:left;transform:skewX(-6deg)}
+#logoType .w1{color:#ffffff}
+#logoType .w2{color:#9e9e9e}
+#logoType .w3{color:#ffc107}
+#logoType .cur{border-right:3px solid #f3d27a;margin-right:2px;animation:blink .8s step-end infinite}
+@keyframes blink{50%{border-color:transparent}}
+#credit{margin-top:4px;font-size:11px;letter-spacing:1px;color:#8a7a52;opacity:.75}
 #hud{position:absolute;top:6px;left:8px;right:8px;display:none;justify-content:space-between;font-size:13px;font-weight:700;color:#f3d27a;pointer-events:none}
 #hud div{background:#000a;border:1px solid #b8860b88;border-radius:10px;padding:5px 9px}
 #msg{position:absolute;top:30%;width:100%;text-align:center;font-size:22px;font-weight:700;text-shadow:0 2px 6px #000;pointer-events:none}
@@ -23,8 +33,8 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 .k{position:absolute;bottom:14px;display:none;gap:8px}
 .k button{width:60px;height:60px;border-radius:50%;border:2px solid #b8860b;background:radial-gradient(#3a2a08,#000b);color:#f3d27a;font-weight:700;font-size:11px;touch-action:none}
 </style></head><body>
-<div id="home"><svg width="170" height="128" viewBox="0 0 150 100" preserveAspectRatio="xMidYMid meet" style="margin-bottom:18px"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d27a"/><stop offset="1" stop-color="#b8860b"/></linearGradient><linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b23c"/><stop offset="1" stop-color="#a87f12"/></linearGradient></defs><circle cx="75" cy="46" r="43" fill="url(#bg2)" stroke="#f3d27a" stroke-width="2"/><rect x="43" y="27" width="18" height="4" rx="2" fill="#f3d27a"/><rect x="89" y="27" width="18" height="4" rx="2" fill="#f3d27a"/><path d="M50 48 l7 -11 h36 l7 11" fill="none" stroke="#3a2c05" stroke-width="3" stroke-linejoin="round"/><rect x="39" y="46" width="72" height="14" rx="3" fill="#f3d27a"/><circle cx="56" cy="62" r="7.5" fill="#3a2c05"/><circle cx="56" cy="62" r="3" fill="#f3d27a"/><circle cx="94" cy="62" r="7.5" fill="#3a2c05"/><circle cx="94" cy="62" r="3" fill="#f3d27a"/><rect x="46" y="74" width="58" height="3" rx="1.5" fill="#8a6a0e"/><text x="75" y="97" text-anchor="middle" font-family="Georgia,serif" font-size="13" letter-spacing="6" fill="url(#lg)">GAMES</text></svg><h1>DRIVE TO EMPIRE</h1><div style="color:#b8860b">TRUCKRES</div><div id="cn" style="font-size:18px;margin:8px"></div>
-<button class="b" onclick="chg(-1)">PREV CAR</button><button class="b" onclick="chg(1)">NEXT CAR</button><button class="b" id="bb" onclick="bsel()">SELECT</button><button class="b" id="ab" onclick="parea()">AREA</button><button class="b" onclick="play()">PLAY</button><div id="btnbox"></div></div>
+<div id="home"><div id="logoWrap"><img id="logoCar" src="./brand/car_trim.png" alt="Drive to Empire"><div id="logoType" aria-label="DRIVE TO EMPIRE"><span class="w1" id="t1"></span><span class="w2" id="t2"></span><br><span class="w3" id="t3"></span><span class="cur" id="tcur"></span></div></div><div style="color:#b8860b;letter-spacing:4px;font-size:13px">TRUCKRES</div><div id="cn" style="font-size:18px;margin:8px"></div>
+<button class="b" onclick="chg(-1)">PREV CAR</button><button class="b" onclick="chg(1)">NEXT CAR</button><button class="b" id="bb" onclick="bsel()">SELECT</button><button class="b" id="ab" onclick="parea()">AREA</button><button class="b" id="pb" onclick="play()">PLAY</button><div id="btnbox"></div><div id="credit">Made by Clio</div></div>
 <div id="apn" style="position:absolute;inset:0;z-index:9;background:#000e;display:none;overflow:auto;padding:14px;box-sizing:border-box;font-size:14px;touch-action:pan-y"></div>
 <div id="hud"><div id="h1"></div><div id="h2"></div></div><button class="b" id="vb" onclick="vmod()">VIEW: CHASE</button><canvas id="mm" width="90" height="120" style="position:absolute;top:64px;left:8px;border:1px solid #b8860b;border-radius:8px;background:#000a;display:none;pointer-events:none"></canvas><div id="msg"></div><button class="b" id="ex" onclick="quit()">EXIT</button>
 <div class="k" id="kl" style="left:10px"><button data-k="l">LEFT</button><button data-k="r">RIGHT</button></div>
@@ -91,7 +101,7 @@ const rt=tex(64,128,g=>{g.fillStyle='#3b3b41';g.fillRect(0,0,64,128);for(let i=0
 const N=90,rg=new THREE.BufferGeometry(),rp=new Float32Array((N+1)*6),ru=new Float32Array((N+1)*4),ri=[];for(let i=0;i<N;i++){const a=i*2;ri.push(a,a+1,a+2,a+1,a+3,a+2)}
 rg.setIndex(ri);rg.setAttribute('position',new THREE.BufferAttribute(rp,3));rg.setAttribute('uv',new THREE.BufferAttribute(ru,2));
 const road=new THREE.Mesh(rg,new THREE.MeshStandardMaterial({map:rt,roughness:.85,side:THREE.DoubleSide}));road.receiveShadow=true;road.frustumCulled=false;sc.add(road);
-function updRoad(){const b=Math.max(0,Math.floor(car.s/ST)-8);for(let i=0;i<=N;i++){const n=b+i,q=pt(n),c=Math.cos(q.t),s=Math.sin(q.t);rp.set([q.x-c*RW,.02,q.z-s*RW,q.x+c*RW,.02,q.z+s*RW],i*6);ru.set([0,n*ST/8,1,n*ST/8],i*4)}rg.attributes.position.needsUpdate=true;rg.attributes.uv.needsUpdate=true}
+function updRoad(){const b=Math.max(0,Math.floor(car.s/ST)-14);const off=Math.max(0,14-Math.floor(car.s/ST));for(let i=0;i<=N;i++){const n=b+i,q=pt(n),c=Math.cos(q.t),s=Math.sin(q.t);rp.set([q.x-c*RW,.02,q.z-s*RW,q.x+c*RW,.02,q.z+s*RW],i*6);ru.set([0,n*ST/8,1,n*ST/8],i*4)}rg.attributes.position.needsUpdate=true;rg.attributes.uv.needsUpdate=true}
 const gt=tex(128,128,g=>{for(let i=0;i<2500;i++){const v=170+Math.random()*85|0;g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(Math.random()*128,Math.random()*128,2,2)}},240);
 const gm=new THREE.MeshStandardMaterial({map:gt,color:0x388e3c,roughness:1}),ground=new THREE.Mesh(new THREE.PlaneGeometry(1200,1200),gm);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;sc.add(ground);
 // cars
@@ -276,6 +286,15 @@ function play(){if(lvl()<AR[AI].min)return;engStart();P.length=1;_plan=[];_pi=0;
 function quit(){run=0;if(eg)eg.gain.value=0;save();$('home').style.display='flex';['hud','ex','vb'].forEach(i=>$(i).style.display='none');$('mm').style.display='none';$('kl').style.display=$('kr').style.display='none';gi=S.cur;gref()}
 document.querySelectorAll('[data-k]').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{b.setPointerCapture(e.pointerId);KY[k]=1;if(k=='a')act()});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>KY[k]=0))});
 const KM={ArrowLeft:'l',ArrowRight:'r',ArrowUp:'g',ArrowDown:'b'};addEventListener('keydown',e=>{if(e.key==' ')act();if(e.key=='v'||e.key=='V')vmod();if(KM[e.key])KY[KM[e.key]]=1});addEventListener('keyup',e=>{if(KM[e.key])KY[KM[e.key]]=0});
+// 360° manual orbit: drag to look around (only active in 360 mode)
+let _drag=0,_dx=0;
+function _orbitStart(e){if(VM!=1)return;_drag=1;_dx=(e.touches?e.touches[0].clientX:e.clientX)}
+function _orbitMove(e){if(!_drag||VM!=1)return;const x=(e.touches?e.touches[0].clientX:e.clientX);orbA-=(x-_dx)*.008;_dx=x;if(e.cancelable)e.preventDefault()}
+function _orbitEnd(){_drag=0}
+addEventListener('pointerdown',_orbitStart,{passive:true});
+addEventListener('pointermove',_orbitMove,{passive:false});
+addEventListener('pointerup',_orbitEnd,{passive:true});
+addEventListener('pointercancel',_orbitEnd,{passive:true});
 // environment
 const SKc=[0x78b4f0,0xff9a64,0x050816,0x9aaabb].map(c=>new THREE.Color(c)),LL=[1,.55,.08,.4],GRc=[0x388e3c,0x9a9a3e,0x17541c,0x7cb342,0xc89b20,0xb8cad4],FOc=[0x43a047,0x9e9d24,0x14501a,0x8bc34a,0xb28a1a,0xdfe8ee];
 function env(){const ph=(clk/45)%4,i=ph|0,f=ph-i,j=(i+1)%4,se=lvl()>=3?(clk/90|0)%6:0,c=SKc[i].clone().lerp(SKc[j],f),l=LL[i]+(LL[j]-LL[i])*f;if(se==2)c.multiplyScalar(.7);sc.background=c;sc.fog.color.copy(c);sc.fog.near=se==5?25:60;sc.fog.far=se==5?200:se==2?240:380;
@@ -350,7 +369,7 @@ function updCheckpoints(dt){
 /* ===== END CHECKPOINT LOGIC ===== */
 const PR=[8000,15000,22000,30000,45000,55000,70000,90000,120000,150000,200000],AR=[{n:'City',lim:60,amp:1,min:1,side:1},{n:'Highway',lim:100,amp:.4,min:3,side:0},{n:'Mountain',lim:70,amp:1.6,min:5,side:0},{n:'Desert',lim:90,amp:.6,min:7,side:0},{n:'Coast',lim:80,amp:.7,min:9,side:0}];let gi=S.cur,AI=0,VM=0,orbA=0; // VM: 0=chase, 1=360 orbit
 const VMN=['CHASE','360°'];
-function vmod(){VM=(VM+1)%2;$('vb').textContent='VIEW: '+VMN[VM];if(VM==1)orbA=Math.atan2(cam.position.x-at(car.s,car.lat).x,cam.position.z-at(car.s,car.lat).z);msg('View: '+VMN[VM])}
+function vmod(){VM=(VM+1)%2;$('vb').textContent='VIEW: '+VMN[VM]+(VM==1?' (drag)':'');if(VM==1){orbA=Math.atan2(cam.position.x-at(car.s,car.lat).x,cam.position.z-at(car.s,car.lat).z);$('vb').style.borderColor='#f3d27a'}else{$('vb').style.borderColor='#b8860b'}msg('View: '+VMN[VM]+(VM==1?' — drag to look around':''))}
 function gref(){const o=S.own.includes(gi),lk=lvl()<gi+1,c=CARS[gi],b=$('bb');$('cn').textContent=c.n+' - '+c.v+' km/h'+(c.hp?' | '+c.hp+' hp · 0-100 '+c.ac+'s':'')+(c.cls?' · '+c.cls:'');b.textContent=o?(S.cur==gi?'SELECTED':'SELECT'):lk?'LOCKED Lv '+(gi+1):'BUY $'+PR[gi];b.style.opacity=!o&&lk?.5:1;{const a=AR[AI],un=lvl()>=a.min;$('ab').textContent='AREA: '+a.n+(un?'':' [LOCK Lv'+a.min+']');$('ab').style.opacity=un?1:.6}}
 function bsel(){if(!S.own.includes(gi)){if(lvl()<gi+1||S.money<PR[gi])return;S.money-=PR[gi];S.own.push(gi)}S.cur=gi;save();gref()}
 function parea(){const pn=$('apn');pn.innerHTML='<h2 style="color:#f3d27a;margin:4px 0 10px">SELECT AREA</h2>'+AR.map((a,k)=>{const un=lvl()>=a.min,cur=k==AI;return '<div class="arow" data-k="'+k+'" style="margin:8px 0;padding:10px 14px;border-radius:10px;border:1px solid '+(cur?'#f3d27a':'#b8860b55')+';background:'+(cur?'#f3d27a22':'#000a')+';opacity:'+(un?1:.5)+';cursor:'+(un?'pointer':'default')+'">'+(cur?'&#9654; ':'&nbsp;&nbsp;&nbsp;')+(un?'[OPEN] ':'[LOCK] ')+a.n+(un?'':' (Lv '+a.min+')')+'</div>'}).join('')+'<div style="text-align:center;margin-top:14px"><button class="b" id="acl">CLOSE</button></div>';pn.style.display='block';$('acl').onclick=()=>pn.style.display='none';pn.querySelectorAll('.arow').forEach(r=>r.onclick=()=>{const k=+r.dataset.k;if(lvl()<AR[k].min)return;AI=k;gref();pn.style.display='none'})}
@@ -379,7 +398,7 @@ function frame(t){if(!run)return;requestAnimationFrame(frame);const dt=Math.min(
  for(const k of COIN){if(k.s<car.s-10){k.s=car.s+40+Math.random()*250;k.lat=LANES[Math.random()*3|0]}const q=at(k.s,k.lat);k.m.position.set(q.x,1,q.z);k.m.rotation.y+=dt*3;if(Math.abs(k.s-car.s)<2.5&&Math.abs(k.lat-car.lat)<2){pay(25);k.s=-99}}
  const[i,se]=env();updRoad();upTL(ps);game(dt);updCheckpoints(dt);updPeds(dt);updShops();place(Math.max(0,Math.floor(car.s/8)-4));placeH(Math.max(0,Math.floor(car.s/80)-3));placeL(Math.max(0,Math.floor(car.s/24)-2));ground.position.set(p.x,0,p.z);gt.offset.set(p.x/5,-p.z/5);
  if(VM==0){const cp=at(car.s-8.5,car.lat*.7),lk=at(car.s+14,car.lat*.5),sk=Math.abs(car.lat)>RW?Math.random()*.08:0;cam.position.lerp(new THREE.Vector3(cp.x,3.4+sk,cp.z),Math.min(1,dt*6));cam.lookAt(lk.x,1.2,lk.z);cam.fov=60+Math.abs(car.v)*.6}
- else{const c0=at(car.s,car.lat);orbA+=dt*.45;const R=9.5+Math.abs(car.v)*.03;cam.position.set(c0.x+Math.sin(orbA)*R,3.6,c0.z+Math.cos(orbA)*R);cam.lookAt(c0.x,1.0,c0.z);cam.fov=62}
+ else{const c0=at(car.s,car.lat);const R=9.5+Math.abs(car.v)*.03;cam.position.set(c0.x+Math.sin(orbA)*R,3.6,c0.z+Math.cos(orbA)*R);cam.lookAt(c0.x,1.0,c0.z);cam.fov=62}
  cam.updateProjectionMatrix();
  sv+=dt;if(sv>5){sv=0;save()}if(msgT>0){msgT-=dt;if(msgT<=0)$('msg').textContent=''}
  $('h1').textContent=`${Math.abs(car.v*3.6|0)} km/h  $${S.money|0}`;$('h2').textContent=`${AR[AI].n} | Lv${lvl()} ${LN[lvl()-1]} | ${PH[i]}${lvl()>=3?' | '+SE[se]:''}${lvl()>=4?' | Fuel '+(car.fuel|0)+'%':''}${car.pax?' | Pax '+car.pax+' T '+Math.max(0,tlim-el|0)+'s':''}`;
@@ -402,6 +421,18 @@ gref();
  btns.sort((a,b)=>rank(a)-rank(b));
  btns.forEach(b=>box.appendChild(b));
 })();
+/* Typing animation for the logo text: DRIVE (white) TO (gray) / EMPIRE (gold) */
+(function(){
+ const t1=document.getElementById('t1'),t2=document.getElementById('t2'),t3=document.getElementById('t3'),cur=document.getElementById('tcur');
+ if(!t1)return;
+ const parts=[[t1,'DRIVE '],[t2,'TO'],[t3,'EMPIRE']];
+ const seq=[];parts.forEach(([el,txt])=>{for(const ch of txt)seq.push([el,ch])});
+ let i=0;
+ function step(){
+   if(i>=seq.length){cur.style.display='none';return}
+   const[el,ch]=seq[i++];el.textContent+=ch;setTimeout(step,100);
+ }
+ setTimeout(step,400);
+})();
 </script>
-<!-- rebuild 1793985849 -->
 </body></html>
