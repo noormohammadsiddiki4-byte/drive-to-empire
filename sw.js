@@ -1,5 +1,5 @@
 /* Drive to Empire 3D — offline service worker */
-const CACHE = 'dte3d-cache-v10';
+const CACHE = 'dte3d-cache-v11';
 const ASSETS = [
   './',
   './index.html',
@@ -8,7 +8,8 @@ const ASSETS = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './brand/car_trim.png'
+  './brand/car_trim.png',
+  './brand/logo_trimmed.png'
 ];
 
 self.addEventListener('install', e => {
