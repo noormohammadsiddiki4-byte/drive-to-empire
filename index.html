@@ -9,22 +9,15 @@
 <style>
 :root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html,body{height:100%;margin:0;background:#000;color:#f4ead0;font-family:system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
-#home{overflow:auto;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(ellipse at 50% 15%,#2b2007,#0b0905 55%,#000);text-align:center;z-index:5}
+#home{overflow:auto;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px 0;background:radial-gradient(ellipse at 50% 15%,#2b2007,#0b0905 55%,#000);text-align:center;z-index:5}
 h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradient(#f3d27a,#b8860b);-webkit-background-clip:text;color:transparent}
 .b{background:linear-gradient(#f3d27a,#d9a520 45%,#8a6208);color:#1a1200;border:1px solid #f3d27a;border-radius:12px;padding:13px 26px;font-weight:700;font-size:16px;min-width:200px}
-#btnbox{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(92vw,420px)}
-#btnbox .b{min-width:0;width:100%;padding:13px 8px;font-size:15px}
+#btnbox{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:min(92vw,420px)}
+#btnbox .b{min-width:0;width:100%;padding:11px 8px;font-size:15px}
 #btnbox #bb{grid-column:1/3}
 #btnbox #pb{grid-column:1/3}
-#logoWrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin-bottom:4px;width:100%}
-#logoCar{width:min(58vw,240px);height:auto;display:block;filter:drop-shadow(0 6px 18px #000b)}
-#logoType{font-family:'Arial Black','Segoe UI',Impact,system-ui,sans-serif;font-weight:900;font-style:italic;font-size:clamp(30px,10vw,50px);letter-spacing:1px;line-height:.98;text-align:left;transform:skewX(-6deg)}
-#logoType .w1{color:#ffffff}
-#logoType .w2{color:#9e9e9e}
-#logoType .w3{color:#ffc107}
-#logoType .cur{border-right:3px solid #f3d27a;margin-right:2px;animation:blink .8s step-end infinite}
-@keyframes blink{50%{border-color:transparent}}
-#credit{margin-top:4px;font-size:11px;letter-spacing:1px;color:#8a7a52;opacity:.75}
+#logoWrap{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:2px;width:100%}#logoFull{width:min(78vw,340px);height:auto;display:block}
+#credit{margin-top:2px;font-size:11px;letter-spacing:1px;color:#8a7a52;opacity:.75}
 #hud{position:absolute;top:6px;left:8px;right:8px;display:none;justify-content:space-between;font-size:13px;font-weight:700;color:#f3d27a;pointer-events:none}
 #hud div{background:#000a;border:1px solid #b8860b88;border-radius:10px;padding:5px 9px}
 #msg{position:absolute;top:30%;width:100%;text-align:center;font-size:22px;font-weight:700;text-shadow:0 2px 6px #000;pointer-events:none}
@@ -33,7 +26,7 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 .k{position:absolute;bottom:14px;display:none;gap:8px}
 .k button{width:60px;height:60px;border-radius:50%;border:2px solid #b8860b;background:radial-gradient(#3a2a08,#000b);color:#f3d27a;font-weight:700;font-size:11px;touch-action:none}
 </style></head><body>
-<div id="home"><div id="logoWrap"><img id="logoCar" src="./brand/car_trim.png" alt="Drive to Empire"><div id="logoType" aria-label="DRIVE TO EMPIRE"><span class="w1" id="t1"></span><span class="w2" id="t2"></span><br><span class="w3" id="t3"></span><span class="cur" id="tcur"></span></div></div><div style="color:#b8860b;letter-spacing:4px;font-size:13px">TRUCKRES</div><div id="cn" style="font-size:18px;margin:8px"></div>
+<div id="home"><div id="logoWrap"><img id="logoFull" src="./brand/logo_trimmed.png" alt="Drive to Empire"></div><div style="color:#b8860b;letter-spacing:4px;font-size:13px">TRUCKRES</div><div id="cn" style="font-size:15px;margin:4px 6px;line-height:1.25;max-width:94vw"></div>
 <button class="b" onclick="chg(-1)">PREV CAR</button><button class="b" onclick="chg(1)">NEXT CAR</button><button class="b" id="bb" onclick="bsel()">SELECT</button><button class="b" id="ab" onclick="parea()">AREA</button><button class="b" id="pb" onclick="play()">PLAY</button><div id="btnbox"></div><div id="credit">Made by Clio</div></div>
 <div id="apn" style="position:absolute;inset:0;z-index:9;background:#000e;display:none;overflow:auto;padding:14px;box-sizing:border-box;font-size:14px;touch-action:pan-y"></div>
 <div id="hud"><div id="h1"></div><div id="h2"></div></div><button class="b" id="vb" onclick="vmod()">VIEW: CHASE</button><canvas id="mm" width="90" height="120" style="position:absolute;top:64px;left:8px;border:1px solid #b8860b;border-radius:8px;background:#000a;display:none;pointer-events:none"></canvas><div id="msg"></div><button class="b" id="ex" onclick="quit()">EXIT</button>
@@ -370,7 +363,7 @@ function updCheckpoints(dt){
 const PR=[8000,15000,22000,30000,45000,55000,70000,90000,120000,150000,200000],AR=[{n:'City',lim:60,amp:1,min:1,side:1},{n:'Highway',lim:100,amp:.4,min:3,side:0},{n:'Mountain',lim:70,amp:1.6,min:5,side:0},{n:'Desert',lim:90,amp:.6,min:7,side:0},{n:'Coast',lim:80,amp:.7,min:9,side:0}];let gi=S.cur,AI=0,VM=0,orbA=0; // VM: 0=chase, 1=360 orbit
 const VMN=['CHASE','360°'];
 function vmod(){VM=(VM+1)%2;$('vb').textContent='VIEW: '+VMN[VM]+(VM==1?' (drag)':'');if(VM==1){orbA=Math.atan2(cam.position.x-at(car.s,car.lat).x,cam.position.z-at(car.s,car.lat).z);$('vb').style.borderColor='#f3d27a'}else{$('vb').style.borderColor='#b8860b'}msg('View: '+VMN[VM]+(VM==1?' — drag to look around':''))}
-function gref(){const o=S.own.includes(gi),lk=lvl()<gi+1,c=CARS[gi],b=$('bb');$('cn').textContent=c.n+' - '+c.v+' km/h'+(c.hp?' | '+c.hp+' hp · 0-100 '+c.ac+'s':'')+(c.cls?' · '+c.cls:'');b.textContent=o?(S.cur==gi?'SELECTED':'SELECT'):lk?'LOCKED Lv '+(gi+1):'BUY $'+PR[gi];b.style.opacity=!o&&lk?.5:1;{const a=AR[AI],un=lvl()>=a.min;$('ab').textContent='AREA: '+a.n+(un?'':' [LOCK Lv'+a.min+']');$('ab').style.opacity=un?1:.6}}
+function gref(){const o=S.own.includes(gi),lk=lvl()<gi+1,c=CARS[gi],b=$('bb');$('cn').innerHTML=c.n+' <span style="color:#b8860b">·</span> '+c.v+' km/h'+(c.hp?' <span style="color:#8a7a52">|</span> '+c.hp+' hp':'')+(c.ac?' <span style="color:#8a7a52">·</span> 0-100 '+c.ac+'s':'')+(c.cls?' <span style="color:#8a7a52">·</span> '+c.cls:'');b.textContent=o?(S.cur==gi?'SELECTED':'SELECT'):lk?'LOCKED Lv '+(gi+1):'BUY $'+PR[gi];b.style.opacity=!o&&lk?.5:1;{const a=AR[AI],un=lvl()>=a.min;$('ab').textContent='AREA: '+a.n+(un?'':' [LOCK Lv'+a.min+']');$('ab').style.opacity=un?1:.6}}
 function bsel(){if(!S.own.includes(gi)){if(lvl()<gi+1||S.money<PR[gi])return;S.money-=PR[gi];S.own.push(gi)}S.cur=gi;save();gref()}
 function parea(){const pn=$('apn');pn.innerHTML='<h2 style="color:#f3d27a;margin:4px 0 10px">SELECT AREA</h2>'+AR.map((a,k)=>{const un=lvl()>=a.min,cur=k==AI;return '<div class="arow" data-k="'+k+'" style="margin:8px 0;padding:10px 14px;border-radius:10px;border:1px solid '+(cur?'#f3d27a':'#b8860b55')+';background:'+(cur?'#f3d27a22':'#000a')+';opacity:'+(un?1:.5)+';cursor:'+(un?'pointer':'default')+'">'+(cur?'&#9654; ':'&nbsp;&nbsp;&nbsp;')+(un?'[OPEN] ':'[LOCK] ')+a.n+(un?'':' (Lv '+a.min+')')+'</div>'}).join('')+'<div style="text-align:center;margin-top:14px"><button class="b" id="acl">CLOSE</button></div>';pn.style.display='block';$('acl').onclick=()=>pn.style.display='none';pn.querySelectorAll('.arow').forEach(r=>r.onclick=()=>{const k=+r.dataset.k;if(lvl()<AR[k].min)return;AI=k;gref();pn.style.display='none'})}
 const HLN=24,HL=[],hlm=new THREE.MeshStandardMaterial({color:0x6b7a6a,roughness:1,flatShading:true});for(let k=0;k<HLN;k++){const m=new THREE.Mesh(new THREE.ConeGeometry(1,1,7),hlm);sc.add(m);HL.push(m)}
@@ -421,18 +414,6 @@ gref();
  btns.sort((a,b)=>rank(a)-rank(b));
  btns.forEach(b=>box.appendChild(b));
 })();
-/* Typing animation for the logo text: DRIVE (white) TO (gray) / EMPIRE (gold) */
-(function(){
- const t1=document.getElementById('t1'),t2=document.getElementById('t2'),t3=document.getElementById('t3'),cur=document.getElementById('tcur');
- if(!t1)return;
- const parts=[[t1,'DRIVE '],[t2,'TO'],[t3,'EMPIRE']];
- const seq=[];parts.forEach(([el,txt])=>{for(const ch of txt)seq.push([el,ch])});
- let i=0;
- function step(){
-   if(i>=seq.length){cur.style.display='none';return}
-   const[el,ch]=seq[i++];el.textContent+=ch;setTimeout(step,100);
- }
- setTimeout(step,400);
-})();
+/* Logo is a static full PNG — no animation (per owner's instruction) */
 </script>
 </body></html>
