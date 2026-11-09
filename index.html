@@ -90,11 +90,33 @@ function pt(i){
 function at(s,lat){const i=Math.floor(s/ST),f=s/ST-i,a=pt(i),b=pt(i+1),t=a.t+(b.t-a.t)*f;return{x:a.x+(b.x-a.x)*f+Math.cos(t)*lat,z:a.z+(b.z-a.z)*f+Math.sin(t)*lat,t}}
 const curv=s=>{const i=Math.floor(s/ST);return(pt(i+1).t-pt(i).t)/ST};
 function tex(w,h,fn,rep){const c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'));const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=8;if(rep)t.repeat.set(rep,rep);return t}
-const rt=tex(64,128,g=>{g.fillStyle='#3b3b41';g.fillRect(0,0,64,128);for(let i=0;i<600;i++){const v=Math.random()*70|0;g.fillStyle=`rgba(${v},${v},${v},.3)`;g.fillRect(Math.random()*64,Math.random()*128,2,2)}g.fillStyle='#e8e8e8';g.fillRect(2,0,3,128);g.fillRect(59,0,3,128);g.fillStyle='#f3d27a';g.fillRect(30,0,4,32)});
+const rt=tex(128,256,g=>{g.fillStyle='#3b3b41';g.fillRect(0,0,128,256);for(let i=0;i<2400;i++){const v=Math.random()*70|0;g.fillStyle=`rgba(${v},${v},${v},.3)`;g.fillRect(Math.random()*128,Math.random()*256,2,2)}
+// solid white edge lines
+g.fillStyle='#e8e8e8';g.fillRect(3,0,5,256);g.fillRect(120,0,5,256);
+// dashed centre lane line (white)
+g.fillStyle='#f0f0f0';g.fillRect(61,0,6,110);g.fillRect(61,150,6,106);
+// dashed side lane dividers (fainter)
+g.fillStyle='rgba(232,232,232,.5)';g.fillRect(32,0,4,90);g.fillRect(32,128,4,90);g.fillRect(92,0,4,90);g.fillRect(92,128,4,90);});
 const N=90,rg=new THREE.BufferGeometry(),rp=new Float32Array((N+1)*6),ru=new Float32Array((N+1)*4),ri=[];for(let i=0;i<N;i++){const a=i*2;ri.push(a,a+1,a+2,a+1,a+3,a+2)}
 rg.setIndex(ri);rg.setAttribute('position',new THREE.BufferAttribute(rp,3));rg.setAttribute('uv',new THREE.BufferAttribute(ru,2));
 const road=new THREE.Mesh(rg,new THREE.MeshStandardMaterial({map:rt,roughness:.85,side:THREE.DoubleSide}));road.receiveShadow=true;road.frustumCulled=false;sc.add(road);
-function updRoad(){const b=Math.floor(car.s/ST)-20;for(let i=0;i<=N;i++){const n=b+i,q=pt(n),c=Math.cos(q.t),s=Math.sin(q.t);rp.set([q.x-c*RW,.02,q.z-s*RW,q.x+c*RW,.02,q.z+s*RW],i*6);ru.set([0,n*ST/8,1,n*ST/8],i*4)}rg.attributes.position.needsUpdate=true;rg.attributes.uv.needsUpdate=true}
+/* ===== LANE MARKINGS: separate meshes so they stay crisp ===== */
+// dashed centre line + two dashed side lines, built as thin strips over the road
+const LMN=90, lmMat=new THREE.MeshBasicMaterial({color:0xf2f2f2}), lmMat2=new THREE.MeshBasicMaterial({color:0xbdbdbd});
+function mkLineMesh(mat){const g=new THREE.BufferGeometry(),p=new Float32Array((LMN+1)*6),u=new Float32Array((LMN+1)*4),idx=[];for(let i=0;i<LMN;i++){const a=i*2;idx.push(a,a+1,a+2,a+1,a+3,a+2)}g.setIndex(idx);g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('uv',new THREE.BufferAttribute(u,2));const m=new THREE.Mesh(g,mat);m.frustumCulled=false;m.renderOrder=2;sc.add(m);return{g,p,u}}
+const lmC=mkLineMesh(lmMat),lmL=mkLineMesh(lmMat2),lmR=mkLineMesh(lmMat2);
+function updLines(){const b=Math.floor(car.s/ST)-20;
+ for(let i=0;i<=LMN;i++){const n=b+i,q=pt(n),c=Math.cos(q.t),s=Math.sin(q.t);
+   // centre dashed: visible only on even segments
+   const on=(n&1)==0, onL=(n%4)<2?true:false;
+   const wC=on?.14:0, wS=(n%4<2)?.10:0;
+   lmC.g.attributes.position.set([q.x-c*wC,.06,q.z-s*wC,q.x+c*wC,.06,q.z+s*wC],i*6);
+   lmL.g.attributes.position.set([q.x-c*2.0-wS,.05,q.z-s*2.0-wS,q.x-c*2.0+wS,.05,q.z-s*2.0+wS],i*6);
+   lmR.g.attributes.position.set([q.x+c*2.0-wS,.05,q.z+s*2.0-wS,q.x+c*2.0+wS,.05,q.z+s*2.0+wS],i*6);
+ }
+ lmC.g.attributes.position.needsUpdate=true;lmL.g.attributes.position.needsUpdate=true;lmR.g.attributes.position.needsUpdate=true;
+}
+function updRoad(){const b=Math.floor(car.s/ST)-20;for(let i=0;i<=N;i++){const n=b+i,q=pt(n),c=Math.cos(q.t),s=Math.sin(q.t);rp.set([q.x-c*RW,.02,q.z-s*RW,q.x+c*RW,.02,q.z+s*RW],i*6);ru.set([0,n*ST/8,1,n*ST/8],i*4)}rg.attributes.position.needsUpdate=true;rg.attributes.uv.needsUpdate=true;updLines()}
 const gt=tex(128,128,g=>{for(let i=0;i<2500;i++){const v=170+Math.random()*85|0;g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(Math.random()*128,Math.random()*128,2,2)}},240);
 const gm=new THREE.MeshStandardMaterial({map:gt,color:0x388e3c,roughness:1}),ground=new THREE.Mesh(new THREE.PlaneGeometry(1200,1200),gm);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;sc.add(ground);
 // cars
