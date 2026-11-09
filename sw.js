@@ -1,5 +1,5 @@
 /* Drive to Empire 3D — offline service worker */
-const CACHE = 'dte3d-cache-v16';
+const CACHE = 'dte3d-cache-v17';
 const ASSETS = [
   './',
   './index.html',
@@ -21,7 +21,7 @@ const ASSETS = [
   './models/rolls_royce.glb',
   './models/camaro_zl1_2017.glb',
   './models/toyota_hilux_97.glb',
-  './models/humvee.glb'
+  './models/royal_enfield.glb'
 ];
 
 self.addEventListener('install', e => {
