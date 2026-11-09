@@ -33,9 +33,10 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 <div class="k" id="kl" style="left:10px"><button data-k="l">LEFT</button><button data-k="r">RIGHT</button></div>
 <div class="k" id="kr" style="right:10px"><button data-k="a">ACT</button><button data-k="b">BRAKE</button><button data-k="g">GO</button></div>
 <script src="./three.min.js"></script>
+<script src="./GLTFLoader.js"></script>
 <script>
 /* PWA: offline service worker */
-if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=12',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
+if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=15',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
 </script>
 <script>
 const $=i=>document.getElementById(i);
@@ -120,7 +121,55 @@ function updRoad(){const b=Math.floor(car.s/ST)-20;for(let i=0;i<=N;i++){const n
 const gt=tex(128,128,g=>{for(let i=0;i<2500;i++){const v=170+Math.random()*85|0;g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(Math.random()*128,Math.random()*128,2,2)}},240);
 const gm=new THREE.MeshStandardMaterial({map:gt,color:0x388e3c,roughness:1}),ground=new THREE.Mesh(new THREE.PlaneGeometry(1200,1200),gm);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;sc.add(ground);
 // cars
-function makeCar(ci,col){const c=CARS[ci],[L,W,Hb,Hc,CL]=c.d,g=new THREE.Group(),m=new THREE.MeshStandardMaterial({color:col==null?c.c:col,metalness:.7,roughness:.25}),gl=new THREE.MeshStandardMaterial({color:0x10161e,metalness:.9,roughness:.1}),bk=new THREE.MeshStandardMaterial({color:0x0b0b0b,roughness:.8}),tl=new THREE.MeshStandardMaterial({color:0xff2020,emissive:0xff0000,emissiveIntensity:1.2});
+// ---- realistic GLB car models (Poly Pizza, CC0/CC-BY) ----
+const MODELS={
+ 1:'nissan_gtr',2:'mazda_rx-7',3:'jeep',4:'chevrolet_camaro',5:'range_rover',
+ 6:'dodge_charger',7:'motorcycle',8:'rolls_royce',9:'rolls_royce',10:'camaro_zl1_2017',11:'nissan_gtr'
+};
+const GLB={}, GLBL={};   // loaded scenes + pending list
+const TGLB={};           // traffic model clones
+const TRAFFIC_MODELS=['toyota_hilux_97','humvee','jeep','dodge_charger','range_rover','chevrolet_camaro'];
+const gltfLoader=new THREE.GLTFLoader();
+function loadModels(cb){
+  const names=[...new Set(Object.values(MODELS).concat(TRAFFIC_MODELS))];
+  let left=names.length; if(!left){cb&&cb();return}
+  names.forEach(n=>{
+    gltfLoader.load('./models/'+n+'.glb',g=>{
+      const root=g.scene;
+      root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material.metalness=Math.min(1,(o.material.metalness||0)+.15);o.material.roughness=Math.max(.12,(o.material.roughness||.5)*.7)}}});
+      // normalize: center on origin, sit on ground, length -> ~4.4 units
+      const box=new THREE.Box3().setFromObject(root), size=new THREE.Vector3(); box.getSize(size);
+      const s=5.0/Math.max(size.x,size.z); root.scale.setScalar(s);
+      const b2=new THREE.Box3().setFromObject(root), c=new THREE.Vector3(); b2.getCenter(c);
+      root.position.set(-c.x,-b2.min.y,-c.z);
+      const wrap=new THREE.Group(); wrap.add(root);
+      // orient model to face forward (+s direction). Poly Pizza models vary;
+      // most face -Z, game expects +Z forward after the yaw rotation.
+      root.rotation.y=Math.PI;
+      GLB[n]=wrap;
+      if(--left===0){cb&&cb()}
+    },undefined,e=>{console.warn('model fail',n,e);if(--left===0){cb&&cb()}});
+  });
+}
+function cloneCar(n){return GLB[n]?GLB[n].clone(true):null}
+function makeCar(ci,col,traf){const c=CARS[ci],[L,W,Hb,Hc,CL]=c.d,g=new THREE.Group(),m=new THREE.MeshStandardMaterial({color:col==null?c.c:col,metalness:.7,roughness:.25}),gl=new THREE.MeshStandardMaterial({color:0x10161e,metalness:.9,roughness:.1}),bk=new THREE.MeshStandardMaterial({color:0x0b0b0b,roughness:.8}),tl=new THREE.MeshStandardMaterial({color:0xff2020,emissive:0xff0000,emissiveIntensity:1.2});
+ // realistic GLB body if available
+ const mn=traf?TRAFFIC_MODELS[traf%TRAFFIC_MODELS.length]:MODELS[ci+1], rc=cloneCar(mn);
+ if(rc){
+  rc.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+  g.add(rc);
+  // tail lights + headlights as glow markers on top of GLB
+  const tl2=new THREE.MeshStandardMaterial({color:0xff2020,emissive:0xff0000,emissiveIntensity:1.4});
+  const hl2=new THREE.MeshBasicMaterial({color:0xfff2c0});
+  const bx=new THREE.Box3().setFromObject(rc), sz=new THREE.Vector3();bx.getSize(sz);
+  const zf=bx.max.z, zb=bx.min.z, yb=bx.max.y*.55;
+  for(const x of[-1,1]){const a=new THREE.Mesh(new THREE.BoxGeometry(.28,.12,.06),tl2);a.position.set(x*sz.x*.3,yb,zf);g.add(a);
+    const b=new THREE.Mesh(new THREE.BoxGeometry(.22,.09,.06),hl2);b.position.set(x*sz.x*.28,yb,zb);g.add(b)}
+  g.userData.tl=tl2;g.userData.len=Math.max(sz.x,sz.z);g.userData.wheels=[];g.userData.fw=[];g.userData.r=0.36;
+  // find wheels for rolling animation (named wheel/tyre meshes)
+  rc.traverse(o=>{if(o.isMesh&&/wheel|tyre|tire|rim/i.test(o.name)){g.userData.wheels.push(o);if(o.position.z<0)g.userData.fw.push(o)}});
+  return g}
+
  const add=(geo,mat,x,y,z)=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);o.castShadow=true;g.add(o);return o};
  if(c.bike){ /* motorcycle build */
   add(new THREE.BoxGeometry(W*.55,Hb*1.4,L*.62),m,0,.62,0);
@@ -161,7 +210,7 @@ function placeL(base){for(let k=0;k<LPN;k++){const z=AI==5?loopZone(car.s):AI;LP
 // coins & traffic
 const cg=new THREE.CylinderGeometry(.45,.45,.08,20);cg.rotateZ(Math.PI/2);const cmat=new THREE.MeshStandardMaterial({color:0xf3d27a,metalness:1,roughness:.2,emissive:0x553300,emissiveIntensity:.4}),COIN=[],TRF=[],LANES=[-2.5,0,2.5];
 for(let i=0;i<10;i++){const m=new THREE.Mesh(cg,cmat);sc.add(m);COIN.push({m,s:-99,lat:0})}
-for(let i=0;i<6;i++){const m=makeCar(1+i%4,[0x455a64,0x7b1fa2,0x00796b,0xf57c00][i%4]);sc.add(m);TRF.push({m,s:-999,lat:0,v:0})}
+for(let i=0;i<6;i++){const m=new THREE.Group();sc.add(m);TRF.push({m,s:-999,lat:0,v:0,ci:1+i%4,col:[0x455a64,0x7b1fa2,0x00796b,0xf57c00][i%4],ti:i})}
 // gameplay objects
 const PAS=[],pm=new THREE.MeshStandardMaterial({color:0xd9a520,roughness:.6}),hd=new THREE.MeshStandardMaterial({color:0xe0b896});
 for(let i=0;i<3;i++){const g=new THREE.Group(),b=new THREE.Mesh(new THREE.CylinderGeometry(.28,.3,1.2,10),pm),h=new THREE.Mesh(new THREE.SphereGeometry(.22,10,10),hd);b.position.y=.8;h.position.y=1.65;g.add(b,h);g.traverse(o=>o.castShadow=true);sc.add(g);PAS.push({m:g,s:-99,lat:0})}
@@ -449,6 +498,20 @@ function frame(t){if(!run)return;requestAnimationFrame(frame);const dt=Math.min(
  $('h1').textContent=`${Math.abs(car.v*3.6|0)} km/h  $${S.money|0}`;$('h2').textContent=`${AI==5?('LOOP › '+loopArea(car.s)):AR[AI].n} | Lv${lvl()} ${LN[lvl()-1]} | ${PH[i]}${lvl()>=3?' | '+SE[se]:''}${lvl()>=4?' | Fuel '+(car.fuel|0)+'%':''}${car.pax?' | Pax '+car.pax+' T '+Math.max(0,tlim-el|0)+'s':''}`;
  engUpd();mm();R.render(sc,cam)}
 gref();
+// load realistic car models, then refresh the home preview
+(function(){
+  const cn=document.getElementById('cn');
+  const prev=cn?cn.innerHTML:'';
+  if(cn)cn.innerHTML='Loading models…';
+  loadModels(()=>{
+    // build traffic cars now that models are ready
+    TRF.forEach(t=>{
+      const old=t.m; if(old&&old.parent)sc.remove(old);
+      const m=makeCar(t.ci,t.col,t.ti); sc.add(m); t.m=m;
+    });
+    if(cn)cn.innerHTML=prev; gref();
+  });
+})();
 </script>
 <script src="./update.js"></script>
 <script>
