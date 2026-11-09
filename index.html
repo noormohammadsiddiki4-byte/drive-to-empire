@@ -36,7 +36,7 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 <script src="./GLTFLoader.js"></script>
 <script>
 /* PWA: offline service worker */
-if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=16',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
+if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=17',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
 </script>
 <script>
 const $=i=>document.getElementById(i);
@@ -128,7 +128,7 @@ const MODELS={
 };
 const GLB={}, GLBL={};   // loaded scenes + pending list
 const TGLB={};           // traffic model clones
-const TRAFFIC_MODELS=['toyota_hilux_97','humvee','jeep','dodge_charger','range_rover','chevrolet_camaro'];
+const TRAFFIC_MODELS=['toyota_hilux_97','royal_enfield','jeep','dodge_charger','range_rover','chevrolet_camaro'];
 const gltfLoader=new THREE.GLTFLoader();
 function loadModels(cb){
   const names=[...new Set(Object.values(MODELS).concat(TRAFFIC_MODELS))];
@@ -149,7 +149,8 @@ function loadModels(cb){
       if(vsz.x > vsz.z){ root.rotation.y += Math.PI/2; root.updateMatrixWorld(true); }
       // now normalize using the rotated bounds: center on origin, sit on ground, length -> ~5 units
       const box=new THREE.Box3().setFromObject(root), size=new THREE.Vector3(); box.getSize(size);
-      const s=5.0/Math.max(size.x,size.z); root.scale.setScalar(s);
+      const tgt=(n==='royal_enfield'||n==='motorcycle')?3.2:5.0;
+      const s=tgt/Math.max(size.x,size.z); root.scale.setScalar(s);
       root.updateMatrixWorld(true);
       const b2=new THREE.Box3().setFromObject(root), c=new THREE.Vector3(); b2.getCenter(c);
       root.position.set(-c.x,-b2.min.y,-c.z);
