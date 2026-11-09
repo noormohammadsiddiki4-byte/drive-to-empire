@@ -36,7 +36,7 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 <script src="./GLTFLoader.js"></script>
 <script>
 /* PWA: offline service worker */
-if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=20',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
+if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=21',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
 </script>
 <script>
 const $=i=>document.getElementById(i);
@@ -167,24 +167,9 @@ function makeCar(ci,col,traf){const c=CARS[ci],[L,W,Hb,Hc,CL]=c.d,g=new THREE.Gr
  if(rc){
   rc.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
   g.add(rc);
-  // tail lights + headlights as glow markers, attached to the WRAP group (normalized space)
-  const tl2=new THREE.MeshStandardMaterial({color:0xff2020,emissive:0xff0000,emissiveIntensity:1.4});
-  const hl2=new THREE.MeshBasicMaterial({color:0xfff2c0});
-  // measure the model's WORLD bounds (rc already normalized: centered on origin, sitting on ground)
+  // NO lights on cars (per sir's instruction 2026-11-09)
   const bx=new THREE.Box3().setFromObject(rc), sz=new THREE.Vector3();bx.getSize(sz);
-  const bodyH=bx.max.y-bx.min.y;
-  const yL=bx.min.y+bodyH*0.42;          // bumper/light height
-  const xL=sz.x*0.34;                     // inset from the sides
-  const zF=bx.max.z-0.06;                 // +Z end  (this is the car's REAR: game faces -Z)
-  const zB=bx.min.z+0.06;                 // -Z end  (this is the car's FRONT: game faces -Z)
-  // lights added to `g` (the same parent as rc) so they share rc's normalized transform
-  // NOTE: the car model points along -Z in game space, so headlights go on the -Z end
-  // and tail lights on the +Z end.
-  for(const x of[-1,1]){
-    const a=new THREE.Mesh(new THREE.BoxGeometry(.26,.11,.06),tl2);a.position.set(x*xL,yL,zF);g.add(a);
-    const b=new THREE.Mesh(new THREE.BoxGeometry(.20,.08,.06),hl2);b.position.set(x*xL,yL,zB);g.add(b);
-  }
-  g.userData.tl=tl2;g.userData.len=Math.max(sz.x,sz.z);g.userData.wheels=[];g.userData.fw=[];g.userData.r=0.36;
+  g.userData.tl=null;g.userData.len=Math.max(sz.x,sz.z);g.userData.wheels=[];g.userData.fw=[];g.userData.r=0.36;
   // find wheels for rolling animation (named wheel/tyre meshes)
   rc.traverse(o=>{if(o.isMesh&&/wheel|tyre|tire|rim/i.test(o.name)){g.userData.wheels.push(o);if(o.position.z<0)g.userData.fw.push(o)}});
   return g}
@@ -502,7 +487,7 @@ function frame(t){if(!run)return;requestAnimationFrame(frame);const dt=Math.min(
  car.lat+=car.st*dt*(2.4*(.5+.5*Math.min(1,Math.abs(car.v)/12)))-curv(car.s+10)*car.v*car.v*dt*.18;
  if(Math.abs(car.lat)>RW+.3)car.v*=1-1.5*dt;car.lat=Math.max(-RW-3,Math.min(RW+3,car.lat));
  const ps=car.s;car.s=Math.max(0,car.s+car.v*dt);acc+=Math.abs(car.v)*dt;if(acc>50){acc-=50;pay(5)}
- const p=at(car.s,car.lat),yaw=car.st*.1;car.m.position.set(p.x,0,p.z);car.m.rotation.set(-car.st*car.v*.0015,-(p.t+yaw),0,'YXZ');car.m.userData.tl.emissiveIntensity=KY.b&&car.v>1?3.5:1.2;
+ const p=at(car.s,car.lat),yaw=car.st*.1;car.m.position.set(p.x,0,p.z);car.m.rotation.set(-car.st*car.v*.0015,-(p.t+yaw),0,'YXZ');
  // wheels: rolling + front steering
  {const ud=car.m.userData;if(ud.wheels){const spin=car.v*dt/ud.r;for(const w of ud.wheels){w.rotation.order='YXZ';w.rotation.x-=spin}const sa=-car.st*0.45;for(const w of ud.fw)w.rotation.y=sa}}
  for(const t of TRF){if(t.s<car.s-30||t.s>car.s+500){t.s=car.s+90+Math.random()*300;t.lat=LANES[Math.random()<.5?0:2];const spd=AI==5?(loopZone(car.s)==1?1.8:loopZone(car.s)>=3?.5:1):(AI==1?1.8:1);t.v=(7+Math.random()*8)*spd}t.s+=t.v*dt;const q=at(t.s,t.lat);t.m.position.set(q.x,0,q.z);t.m.rotation.y=-q.t;const ds=t.s-car.s;if(!t._hold&&ds>-4.5&&ds<4.8&&Math.abs(t.lat-car.lat)<2.1){t.s=car.s+400;msg('Crash!',2)}}
