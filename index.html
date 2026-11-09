@@ -36,7 +36,7 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 <script src="./GLTFLoader.js"></script>
 <script>
 /* PWA: offline service worker */
-if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=15',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
+if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=16',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
 </script>
 <script>
 const $=i=>document.getElementById(i);
@@ -137,15 +137,23 @@ function loadModels(cb){
     gltfLoader.load('./models/'+n+'.glb',g=>{
       const root=g.scene;
       root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material.metalness=Math.min(1,(o.material.metalness||0)+.15);o.material.roughness=Math.max(.12,(o.material.roughness||.5)*.7)}}});
-      // normalize: center on origin, sit on ground, length -> ~4.4 units
+      // detect long axis on the RAW model (before any rotation)
+      const box0=new THREE.Box3().setFromObject(root), size0=new THREE.Vector3(); box0.getSize(size0);
+      const longX = size0.x > size0.z;
+      // rotate FIRST so the car always points along +Z in its own local space
+      root.rotation.y = longX ? Math.PI/2 : Math.PI;
+      root.updateMatrixWorld(true);
+      // verify: after rotation the car must be Z-long (length along Z). If not
+      // (some models have near-square raw bounds), flip 90deg the other way.
+      const vbox=new THREE.Box3().setFromObject(root), vsz=new THREE.Vector3(); vbox.getSize(vsz);
+      if(vsz.x > vsz.z){ root.rotation.y += Math.PI/2; root.updateMatrixWorld(true); }
+      // now normalize using the rotated bounds: center on origin, sit on ground, length -> ~5 units
       const box=new THREE.Box3().setFromObject(root), size=new THREE.Vector3(); box.getSize(size);
       const s=5.0/Math.max(size.x,size.z); root.scale.setScalar(s);
+      root.updateMatrixWorld(true);
       const b2=new THREE.Box3().setFromObject(root), c=new THREE.Vector3(); b2.getCenter(c);
       root.position.set(-c.x,-b2.min.y,-c.z);
       const wrap=new THREE.Group(); wrap.add(root);
-      // orient model to face forward (+s direction). Poly Pizza models vary;
-      // most face -Z, game expects +Z forward after the yaw rotation.
-      root.rotation.y=Math.PI;
       GLB[n]=wrap;
       if(--left===0){cb&&cb()}
     },undefined,e=>{console.warn('model fail',n,e);if(--left===0){cb&&cb()}});
