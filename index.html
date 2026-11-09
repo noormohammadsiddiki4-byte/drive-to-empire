@@ -36,7 +36,7 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 <script src="./GLTFLoader.js"></script>
 <script>
 /* PWA: offline service worker */
-if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=19',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
+if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=20',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
 </script>
 <script>
 const $=i=>document.getElementById(i);
@@ -175,12 +175,14 @@ function makeCar(ci,col,traf){const c=CARS[ci],[L,W,Hb,Hc,CL]=c.d,g=new THREE.Gr
   const bodyH=bx.max.y-bx.min.y;
   const yL=bx.min.y+bodyH*0.42;          // bumper/light height
   const xL=sz.x*0.34;                     // inset from the sides
-  const zF=bx.max.z-0.06;                 // just inside the front face
-  const zB=bx.min.z+0.06;                 // just inside the rear face
+  const zF=bx.max.z-0.06;                 // +Z end  (this is the car's REAR: game faces -Z)
+  const zB=bx.min.z+0.06;                 // -Z end  (this is the car's FRONT: game faces -Z)
   // lights added to `g` (the same parent as rc) so they share rc's normalized transform
+  // NOTE: the car model points along -Z in game space, so headlights go on the -Z end
+  // and tail lights on the +Z end.
   for(const x of[-1,1]){
-    const a=new THREE.Mesh(new THREE.BoxGeometry(.26,.11,.06),tl2);a.position.set(x*xL,yL,zB);g.add(a);
-    const b=new THREE.Mesh(new THREE.BoxGeometry(.20,.08,.06),hl2);b.position.set(x*xL,yL,zF);g.add(b);
+    const a=new THREE.Mesh(new THREE.BoxGeometry(.26,.11,.06),tl2);a.position.set(x*xL,yL,zF);g.add(a);
+    const b=new THREE.Mesh(new THREE.BoxGeometry(.20,.08,.06),hl2);b.position.set(x*xL,yL,zB);g.add(b);
   }
   g.userData.tl=tl2;g.userData.len=Math.max(sz.x,sz.z);g.userData.wheels=[];g.userData.fw=[];g.userData.r=0.36;
   // find wheels for rolling animation (named wheel/tyre meshes)
