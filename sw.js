@@ -1,15 +1,27 @@
 /* Drive to Empire 3D — offline service worker */
-const CACHE = 'dte3d-cache-v14';
+const CACHE = 'dte3d-cache-v15';
 const ASSETS = [
   './',
   './index.html',
   './three.min.js',
+  './GLTFLoader.js',
   './update.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
   './brand/car_trim.png',
-  './brand/logo_trimmed.png'
+  './brand/logo_trimmed.png',
+  './models/nissan_gtr.glb',
+  './models/mazda_rx-7.glb',
+  './models/jeep.glb',
+  './models/chevrolet_camaro.glb',
+  './models/range_rover.glb',
+  './models/dodge_charger.glb',
+  './models/motorcycle.glb',
+  './models/rolls_royce.glb',
+  './models/camaro_zl1_2017.glb',
+  './models/toyota_hilux_97.glb',
+  './models/humvee.glb'
 ];
 
 self.addEventListener('install', e => {
