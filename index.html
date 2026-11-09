@@ -36,7 +36,7 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 <script src="./GLTFLoader.js"></script>
 <script>
 /* PWA: offline service worker */
-if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=18',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
+if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=19',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
 </script>
 <script>
 const $=i=>document.getElementById(i);
@@ -167,13 +167,21 @@ function makeCar(ci,col,traf){const c=CARS[ci],[L,W,Hb,Hc,CL]=c.d,g=new THREE.Gr
  if(rc){
   rc.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
   g.add(rc);
-  // tail lights + headlights as glow markers on top of GLB
+  // tail lights + headlights as glow markers, attached to the WRAP group (normalized space)
   const tl2=new THREE.MeshStandardMaterial({color:0xff2020,emissive:0xff0000,emissiveIntensity:1.4});
   const hl2=new THREE.MeshBasicMaterial({color:0xfff2c0});
+  // measure the model's WORLD bounds (rc already normalized: centered on origin, sitting on ground)
   const bx=new THREE.Box3().setFromObject(rc), sz=new THREE.Vector3();bx.getSize(sz);
-  const zf=bx.max.z, zb=bx.min.z, yb=bx.max.y*.55;
-  for(const x of[-1,1]){const a=new THREE.Mesh(new THREE.BoxGeometry(.28,.12,.06),tl2);a.position.set(x*sz.x*.3,yb,zf);g.add(a);
-    const b=new THREE.Mesh(new THREE.BoxGeometry(.22,.09,.06),hl2);b.position.set(x*sz.x*.28,yb,zb);g.add(b)}
+  const bodyH=bx.max.y-bx.min.y;
+  const yL=bx.min.y+bodyH*0.42;          // bumper/light height
+  const xL=sz.x*0.34;                     // inset from the sides
+  const zF=bx.max.z-0.06;                 // just inside the front face
+  const zB=bx.min.z+0.06;                 // just inside the rear face
+  // lights added to `g` (the same parent as rc) so they share rc's normalized transform
+  for(const x of[-1,1]){
+    const a=new THREE.Mesh(new THREE.BoxGeometry(.26,.11,.06),tl2);a.position.set(x*xL,yL,zB);g.add(a);
+    const b=new THREE.Mesh(new THREE.BoxGeometry(.20,.08,.06),hl2);b.position.set(x*xL,yL,zF);g.add(b);
+  }
   g.userData.tl=tl2;g.userData.len=Math.max(sz.x,sz.z);g.userData.wheels=[];g.userData.fw=[];g.userData.r=0.36;
   // find wheels for rolling animation (named wheel/tyre meshes)
   rc.traverse(o=>{if(o.isMesh&&/wheel|tyre|tire|rim/i.test(o.name)){g.userData.wheels.push(o);if(o.position.z<0)g.userData.fw.push(o)}});
