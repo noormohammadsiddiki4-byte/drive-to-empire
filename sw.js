@@ -1,5 +1,5 @@
 /* Drive to Empire 3D — offline service worker */
-const CACHE = 'dte3d-cache-v21';
+const CACHE = 'dte3d-cache-v22';
 const ASSETS = [
   './',
   './index.html',
@@ -13,13 +13,13 @@ const ASSETS = [
   './brand/logo_trimmed.png',
   './models/nissan_gtr.glb',
   './models/mazda_rx-7.glb',
-  './models/jeep.glb',
+  './models/suv.glb',
   './models/chevrolet_camaro.glb',
   './models/range_rover.glb',
   './models/dodge_charger.glb',
   './models/motorcycle.glb',
   './models/rolls_royce.glb',
-  './models/camaro_zl1_2017.glb',
+  './models/sportscar2.glb',
   './models/toyota_hilux_97.glb',
   './models/royal_enfield.glb'
 ];
