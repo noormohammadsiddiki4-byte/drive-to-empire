@@ -36,7 +36,7 @@ h1{margin:0;font:34px Georgia,serif;letter-spacing:3px;background:linear-gradien
 <script src="./GLTFLoader.js"></script>
 <script>
 /* PWA: offline service worker */
-if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=21',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
+if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js?v=22',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})})}
 </script>
 <script>
 const $=i=>document.getElementById(i);
@@ -123,12 +123,12 @@ const gm=new THREE.MeshStandardMaterial({map:gt,color:0x388e3c,roughness:1}),gro
 // cars
 // ---- realistic GLB car models (Poly Pizza, CC0/CC-BY) ----
 const MODELS={
- 1:'nissan_gtr',2:'mazda_rx-7',3:'jeep',4:'chevrolet_camaro',5:'range_rover',
- 6:'dodge_charger',7:'motorcycle',8:'rolls_royce',9:'rolls_royce',10:'camaro_zl1_2017',11:'nissan_gtr'
+ 1:'nissan_gtr',2:'mazda_rx-7',3:'suv',4:'chevrolet_camaro',5:'range_rover',
+ 6:'dodge_charger',7:'motorcycle',8:'rolls_royce',9:'rolls_royce',10:'sportscar2',11:'nissan_gtr'
 };
 const GLB={}, GLBL={};   // loaded scenes + pending list
 const TGLB={};           // traffic model clones
-const TRAFFIC_MODELS=['toyota_hilux_97','royal_enfield','jeep','dodge_charger','royal_enfield','chevrolet_camaro'];
+const TRAFFIC_MODELS=['toyota_hilux_97','royal_enfield','suv','dodge_charger','royal_enfield','chevrolet_camaro'];
 const gltfLoader=new THREE.GLTFLoader();
 function loadModels(cb){
   const names=[...new Set(Object.values(MODELS).concat(TRAFFIC_MODELS))];
@@ -149,7 +149,7 @@ function loadModels(cb){
       if(vsz.x > vsz.z){ root.rotation.y += Math.PI/2; root.updateMatrixWorld(true); }
       // now normalize using the rotated bounds: center on origin, sit on ground, length -> ~5 units
       const box=new THREE.Box3().setFromObject(root), size=new THREE.Vector3(); box.getSize(size);
-      const tgt=(n==='royal_enfield'||n==='motorcycle')?3.8:5.0;
+      const tgt=(n==='royal_enfield'||n==='motorcycle')?4.5:5.0;
       const s=tgt/Math.max(size.x,size.z); root.scale.setScalar(s);
       root.updateMatrixWorld(true);
       const b2=new THREE.Box3().setFromObject(root), c=new THREE.Vector3(); b2.getCenter(c);
@@ -170,8 +170,87 @@ function makeCar(ci,col,traf){const c=CARS[ci],[L,W,Hb,Hc,CL]=c.d,g=new THREE.Gr
   // NO lights on cars (per sir's instruction 2026-11-09)
   const bx=new THREE.Box3().setFromObject(rc), sz=new THREE.Vector3();bx.getSize(sz);
   g.userData.tl=null;g.userData.len=Math.max(sz.x,sz.z);g.userData.wheels=[];g.userData.fw=[];g.userData.r=0.36;
-  // find wheels for rolling animation (named wheel/tyre meshes)
-  rc.traverse(o=>{if(o.isMesh&&/wheel|tyre|tire|rim/i.test(o.name)){g.userData.wheels.push(o);if(o.position.z<0)g.userData.fw.push(o)}});
+  // ---- WHEEL DETECTION ----
+  // 1) named wheels first (fast path)
+  const named=[];
+  rc.traverse(o=>{if(o.isMesh&&/wheel|tyre|tire|rim/i.test(o.name))named.push(o)});
+  let wheelMeshes=named;
+  // 2) geometry fallback: wheels sit low (small world Y), are disc-shaped
+  //    (two dims nearly equal, one much smaller = the axle), and appear
+  //    symmetrically on both sides + front & back. Pick the best 4 matches.
+  rc.updateMatrixWorld(true);
+  const cand=[];
+  rc.traverse(o=>{
+    if(!o.isMesh)return;
+    const b=new THREE.Box3().setFromObject(o), s=new THREE.Vector3(); b.getSize(s);
+    const c=new THREE.Vector3(); b.getCenter(c);
+    const dims=[s.x,s.y,s.z].sort((a,b)=>a-b);
+    const thin=dims[0], mid=dims[1], big=dims[2];
+    if(big<0.25||big>1.4)return;                 // wheel-sized
+    if(thin>mid*0.75)return;                      // must be disc-like (one thin axis)
+    if(c.y>0.75)return;                           // near the ground
+    if(Math.abs(c.x)<0.25)return;                 // off-centre (left/right) -> excludes spare tyres
+    if(Math.abs(c.z)<0.35)return;                 // not mid-body
+    cand.push({o,c,s,big});
+  });
+  // prefer 4 biggest valid candidates, but keep any named wheels too
+  cand.sort((a,b)=>b.big-a.big);
+  const geoWheels=cand.slice(0,4).map(x=>x.o);
+  if(named.length>=4){
+    // keep only named wheels that are off-centre (drop spare tyres)
+    wheelMeshes=named.filter(w=>{const c=new THREE.Vector3();new THREE.Box3().setFromObject(w).getCenter(c);return Math.abs(c.x)>=0.25});
+    if(wheelMeshes.length<4)wheelMeshes=named;
+  } else if(geoWheels.length>=4){
+    wheelMeshes=geoWheels;
+  } else {
+    wheelMeshes=named.length?named:geoWheels;
+  }
+  // 2b) BIKE fallback: a motorcycle's wheels are centred (|x| small) but sit
+  //     front & back (|z| large), disc-shaped and near the ground. Detect them
+  //     when the car-style detection found nothing.
+  if(wheelMeshes.length<2){
+    const bc=[];
+    rc.traverse(o=>{
+      if(!o.isMesh)return;
+      const b=new THREE.Box3().setFromObject(o), s=new THREE.Vector3(); b.getSize(s);
+      const c=new THREE.Vector3(); b.getCenter(c);
+      const dims=[s.x,s.y,s.z].sort((a,b)=>a-b);
+      const thin=dims[0], mid=dims[1], big=dims[2];
+      if(big<0.3||big>1.5)return;                 // wheel-sized (bikes are scaled to 3.8)
+      if(thin>mid*0.8)return;                      // disc-like
+      if(c.y>0.8)return;                           // near the ground
+      if(Math.abs(c.z)<0.5)return;                 // front or back, not mid-body
+      bc.push({o,c,s,big});
+    });
+    bc.sort((a,b)=>b.big-a.big);
+    if(bc.length>=2)wheelMeshes=bc.slice(0,2).map(x=>x.o);
+  }
+  g.userData.wheels=wheelMeshes;
+  // front wheels = those with negative world Z (car faces -Z after norm)
+  for(const w of wheelMeshes){
+    w.updateMatrixWorld(true);
+    const c=new THREE.Vector3(); new THREE.Box3().setFromObject(w).getCenter(c);
+    if(c.z<0)g.userData.fw.push(w);
+  }
+  if(g.userData.fw.length===0) g.userData.fw=wheelMeshes.slice(0,2);
+  // bikes: only the front wheel steers (the one with the most negative Z)
+  if(wheelMeshes.length<=2){
+    let best=null,bz=1e9;
+    for(const w of wheelMeshes){const c=new THREE.Vector3();new THREE.Box3().setFromObject(w).getCenter(c);if(c.z<bz){bz=c.z;best=w}}
+    g.userData.fw=best?[best]:wheelMeshes.slice(0,1);
+  }
+  // ---- AXES ----
+  // The car is Z-long after normalization, so the axle is world X and the
+  // steering axis is world Y. Convert each into the wheel's own local frame.
+  const pickAxis=v=>Math.abs(v.x)>=Math.abs(v.y)&&Math.abs(v.x)>=Math.abs(v.z)?'x'
+                   :Math.abs(v.y)>=Math.abs(v.z)?'y':'z';
+  for(const w of g.userData.wheels){
+    w.updateWorldMatrix(true,false);
+    const q=new THREE.Quaternion(); w.getWorldQuaternion(q);
+    const inv=q.clone().invert();
+    w.userData.spinAxis = pickAxis(new THREE.Vector3(1,0,0).applyQuaternion(inv));
+    w.userData.steerAxis= pickAxis(new THREE.Vector3(0,1,0).applyQuaternion(inv));
+  }
   return g}
 
  const add=(geo,mat,x,y,z)=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);o.castShadow=true;g.add(o);return o};
@@ -489,11 +568,21 @@ function frame(t){if(!run)return;requestAnimationFrame(frame);const dt=Math.min(
  const ps=car.s;car.s=Math.max(0,car.s+car.v*dt);acc+=Math.abs(car.v)*dt;if(acc>50){acc-=50;pay(5)}
  const p=at(car.s,car.lat),yaw=car.st*.1;car.m.position.set(p.x,0,p.z);car.m.rotation.set(-car.st*car.v*.0015,-(p.t+yaw),0,'YXZ');
  // wheels: rolling + front steering
- {const ud=car.m.userData;if(ud.wheels){const spin=car.v*dt/ud.r;for(const w of ud.wheels){w.rotation.order='YXZ';w.rotation.x-=spin}const sa=-car.st*0.45;for(const w of ud.fw)w.rotation.y=sa}}
+ {const ud=car.m.userData;if(ud.wheels){const spin=car.v*dt/ud.r;const sa=-car.st*0.45;
+   for(const w of ud.wheels){
+     w.rotation.order='YXZ';
+     const ax=w.userData.spinAxis||'x';
+     w.rotation[ax]-=spin;
+   }
+   for(const w of ud.fw){
+     const st=w.userData.steerAxis||'y';
+     w.rotation[st]=sa;
+   }
+ }}
  for(const t of TRF){if(t.s<car.s-30||t.s>car.s+500){t.s=car.s+90+Math.random()*300;t.lat=LANES[Math.random()<.5?0:2];const spd=AI==5?(loopZone(car.s)==1?1.8:loopZone(car.s)>=3?.5:1):(AI==1?1.8:1);t.v=(7+Math.random()*8)*spd}t.s+=t.v*dt;const q=at(t.s,t.lat);t.m.position.set(q.x,0,q.z);t.m.rotation.y=-q.t;const ds=t.s-car.s;if(!t._hold&&ds>-4.5&&ds<4.8&&Math.abs(t.lat-car.lat)<2.1){t.s=car.s+400;msg('Crash!',2)}}
  for(const k of COIN){if(k.s<car.s-10){k.s=car.s+40+Math.random()*250;k.lat=LANES[Math.random()*3|0]}const q=at(k.s,k.lat);k.m.position.set(q.x,1,q.z);k.m.rotation.y+=dt*3;if(Math.abs(k.s-car.s)<2.5&&Math.abs(k.lat-car.lat)<2){pay(25);k.s=-99}}
  const[i,se]=env();updRoad();upTL(ps);game(dt);updCheckpoints(dt);updPeds(dt);updShops();place(Math.max(0,Math.floor(car.s/8)-4));placeH(Math.max(0,Math.floor(car.s/80)-3));placeL(Math.max(0,Math.floor(car.s/24)-2));ground.position.set(p.x,0,p.z);gt.offset.set(p.x/5,-p.z/5);
- if(VM==0){const cp=at(car.s-8.5,car.lat*.7),lk=at(car.s+14,car.lat*.5),sk=Math.abs(car.lat)>RW?Math.random()*.08:0;cam.position.lerp(new THREE.Vector3(cp.x,3.4+sk,cp.z),Math.min(1,dt*6));cam.lookAt(lk.x,1.2,lk.z);cam.fov=60+Math.abs(car.v)*.6}
+ if(VM==0){const bk=CARS[S.cur].bike;const d=bk?6.8:8.5,hy=bk?2.6:3.4,ly=bk?1.0:1.2;const cp=at(car.s-d,car.lat*.7),lk=at(car.s+14,car.lat*.5),sk=Math.abs(car.lat)>RW?Math.random()*.08:0;cam.position.lerp(new THREE.Vector3(cp.x,hy+sk,cp.z),Math.min(1,dt*6));cam.lookAt(lk.x,ly,lk.z);cam.fov=60+Math.abs(car.v)*.6}
  else{const c0=at(car.s,car.lat);const R=9.5+Math.abs(car.v)*.03;cam.position.set(c0.x+Math.sin(orbA)*R,3.6,c0.z+Math.cos(orbA)*R);cam.lookAt(c0.x,1.0,c0.z);cam.fov=62}
  cam.updateProjectionMatrix();
  sv+=dt;if(sv>5){sv=0;save()}if(msgT>0){msgT-=dt;if(msgT<=0)$('msg').textContent=''}
